@@ -9,6 +9,7 @@ export const ID_PREFIX = {
 	event: "evt",
 	delivery: "dlv",
 	attempt: "att",
+	sink: "sink",
 } as const;
 
 export type IdPrefix = (typeof ID_PREFIX)[keyof typeof ID_PREFIX];

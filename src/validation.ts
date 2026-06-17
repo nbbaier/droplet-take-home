@@ -6,6 +6,16 @@
 import { z } from "zod";
 import { EVENT_TYPES } from "./types";
 
+/** Behaviors a Sink can be created with (mirrors the SinkBehavior union). */
+export const sinkBehaviorSchema = z.enum([
+	"always-200",
+	"fail-then-recover",
+	"always-500",
+	"slow",
+	"410-gone",
+	"verify-signature",
+]);
+
 export const eventTypeSchema = z.enum(EVENT_TYPES);
 
 /** Body for POST /events: caller supplies type + opaque data object only. */
@@ -30,3 +40,13 @@ export const registerEndpointSchema = z.object({
 	eventTypes: subscriptionSchema,
 });
 export type RegisterEndpointInput = z.infer<typeof registerEndpointSchema>;
+
+/**
+ * Body for POST /sinks: pick a Behavior; optionally narrow which Event Types the
+ * auto-registered Endpoint subscribes to (defaults to all, ["*"]).
+ */
+export const createSinkSchema = z.object({
+	behavior: sinkBehaviorSchema,
+	eventTypes: subscriptionSchema.optional(),
+});
+export type CreateSinkInput = z.infer<typeof createSinkSchema>;

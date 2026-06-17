@@ -48,6 +48,20 @@ export interface Endpoint {
 	updatedAt: string;
 }
 
+/**
+ * A Sink: an in-process webhook receiver wired to a configurable Behavior, used
+ * to exercise delivery failure modes on demand. Each Sink owns a real Endpoint
+ * (endpoint_id) pointing at `POST /_sink/:id`. `hits` counts how many times the
+ * receiver has been called — used by stateful behaviors like fail-then-recover.
+ */
+export interface Sink {
+	id: string; // sink_<uuid>
+	endpointId: string; // ep_<uuid> the auto-registered Endpoint pointing at this Sink
+	behavior: SinkBehavior;
+	hits: number;
+	createdAt: string;
+}
+
 export interface Event {
 	id: string; // evt_<uuid>
 	type: EventType;

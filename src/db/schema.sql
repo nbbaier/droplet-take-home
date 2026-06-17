@@ -1,4 +1,5 @@
--- Schema for the webhook delivery service. Four tables; see CONTEXT.md.
+-- Schema for the webhook delivery service. Five tables (4 core + `sinks`,
+-- which is test infrastructure for exercising failure modes); see CONTEXT.md.
 -- Timestamps are ISO-8601 TEXT (UTC). JSON columns store TEXT.
 PRAGMA journal_mode = WAL;
 
@@ -54,3 +55,15 @@ CREATE TABLE IF NOT EXISTS
    );
 
 CREATE INDEX IF NOT EXISTS idx_attempts_delivery ON attempts (delivery_id);
+
+-- Sinks: in-process receivers (test infra) with a configurable Behavior. Each
+-- owns a real Endpoint (endpoint_id) pointing at POST /_sink/:id. `hits` counts
+-- received requests, driving stateful behaviors like fail-then-recover.
+CREATE TABLE IF NOT EXISTS
+   sinks (
+      id TEXT PRIMARY KEY, -- sink_<uuid>
+      endpoint_id TEXT NOT NULL REFERENCES endpoints (id),
+      behavior TEXT NOT NULL, -- SinkBehavior union
+      hits INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+   );

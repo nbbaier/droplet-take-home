@@ -44,6 +44,16 @@ export const config = {
 
 	/** Max chars of an endpoint's response body we persist (the rest is dropped). */
 	maxResponseBodyChars: num("MAX_RESPONSE_BODY_CHARS", 2_048),
+
+	/**
+	 * Base URL the daemon serves on, used to point auto-registered Sink Endpoints
+	 * at our own `/_sink/:id` route. Derived from PORT unless overridden.
+	 */
+	publicBaseUrl:
+		process.env.PUBLIC_BASE_URL ?? `http://localhost:${num("PORT", 3000)}`,
+
+	/** How long the `slow` Sink behavior stalls before responding. */
+	sinkSlowDelayMs: num("SINK_SLOW_DELAY_MS", 15_000),
 } as const;
 
 export type Config = typeof config;
