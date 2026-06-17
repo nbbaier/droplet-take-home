@@ -3,7 +3,8 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"dev": "bun run --hot src/index.ts"
+		"dev": "bun run --hot src/index.ts",
+		"harness": "bun run src/harness/index.ts"
 	},
 	"dependencies": {
 		"@libsql/client": "^0.17.4",

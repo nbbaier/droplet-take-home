@@ -12,7 +12,8 @@ import { config } from "./config";
 import { fanOut } from "./fanout";
 import { newId } from "./ids";
 import { behaviorResponse } from "./sinks";
-import { listDeliveries } from "./store/deliveries";
+import { listAttemptsForDelivery } from "./store/attempts";
+import { getDelivery, listDeliveries } from "./store/deliveries";
 import { createEndpoint, getEndpoint, listEndpoints } from "./store/endpoints";
 import { createEvent } from "./store/events";
 import { createSink, getSink, incrementHits } from "./store/sinks";
@@ -59,6 +60,19 @@ app.post("/events", async (c) => {
 });
 
 app.get("/deliveries", async (c) => c.json(await listDeliveries()));
+
+/**
+ * A single Delivery plus its full Attempt timeline (oldest first). Lets the
+ * harness/CLI print the per-try retry timeline (status code per Attempt) without
+ * touching the DB directly — the store already exposes both halves.
+ */
+app.get("/deliveries/:id", async (c) => {
+	const id = c.req.param("id");
+	const delivery = await getDelivery(id);
+	if (!delivery) return c.json({ error: "delivery_not_found" }, 404);
+	const attempts = await listAttemptsForDelivery(id);
+	return c.json({ ...delivery, attempts });
+});
 
 /**
  * Create a Sink: mint its id up front, auto-register an Endpoint pointing back at
