@@ -68,11 +68,11 @@ One central config so demo delays can be shrunk:
       To verify, a receiver MUST recompute over `` `${X-Webhook-Timestamp}.${body}` ``
       with its Endpoint secret — NOT over the body alone. (Stripe-style; the
       timestamp in the signed payload is what gives replay protection.)
-- [ ] In-process sink routes `POST /_sink/:id` with Behaviors: always-200,
+- [x] In-process sink routes `POST /_sink/:id` with Behaviors: always-200,
       fail-then-recover, always-500, slow/timeout, 410-gone, verify-signature.
       (The `verify-signature` sink must reconstruct `timestamp.body` per the
       contract above.)
-- [ ] `POST /sinks` — create sink with chosen behavior, auto-register Endpoint
+- [x] `POST /sinks` — create sink with chosen behavior, auto-register Endpoint
       pointing at it, return id.
 
 ### 4. Harness + tests (the evidence)
@@ -98,8 +98,8 @@ One central config so demo delays can be shrunk:
 ### Edge-case behaviors (fold into steps above)
 
 - [~] Endpoint soft-delete → in-flight Deliveries → `canceled` (not `failed`).
-      (Worker cancels deliveries for deleted/disabled Endpoints; store fn exists.
-      Still needs the `DELETE /endpoints/:id` route + proactive cancel.)
+  (Worker cancels deliveries for deleted/disabled Endpoints; store fn exists.
+  Still needs the `DELETE /endpoints/:id` route + proactive cancel.)
 - [x] 410 → Endpoint `disabled`; queued Deliveries `canceled`; no new fan-out.
 - [x] Routing frozen at fan-out (subscription changes don't affect existing Deliveries).
 

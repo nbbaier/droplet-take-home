@@ -69,7 +69,10 @@ app.post("/sinks", async (c) => {
 		await c.req.json().catch(() => null),
 	);
 	if (!parsed.success) {
-		return c.json({ error: "invalid_sink", details: parsed.error.flatten() }, 400);
+		return c.json(
+			{ error: "invalid_sink", details: parsed.error.flatten() },
+			400,
+		);
 	}
 	const sinkId = newId("sink");
 	const url = `${config.publicBaseUrl}/_sink/${sinkId}`;

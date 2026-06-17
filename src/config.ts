@@ -12,14 +12,14 @@ function num(name: string, fallback: number): number {
 	const parsed = Number(raw);
 	return Number.isFinite(parsed) ? parsed : fallback;
 }
+const port = num("PORT", 3000);
 
 export const config = {
 	/** Where the libsql database file lives. */
 	databaseUrl: process.env.DATABASE_URL ?? "file:./webhooks.db",
 
 	/** HTTP server port for the daemon (API + sinks + status). */
-	port: num("PORT", 3000),
-
+	port,
 	/** Per-Attempt outbound HTTP timeout. */
 	requestTimeoutMs: num("REQUEST_TIMEOUT_MS", 10_000),
 
@@ -38,6 +38,9 @@ export const config = {
 	/** Attempts before a Delivery is marked permanently `failed`. */
 	maxAttempts: num("MAX_ATTEMPTS", 5),
 
+	/** How many hits before success for the fail-then-recover sink behavior. */
+	failThenRecoverThreshold: num("FAIL_THEN_RECOVER_THRESHOLD", 3), // how many hits before success
+
 	/** Exponential backoff: min(cap, base * 2^attempt) + jitter. */
 	backoffBaseMs: num("BACKOFF_BASE_MS", 1_000),
 	backoffCapMs: num("BACKOFF_CAP_MS", 60 * 60 * 1_000),
@@ -49,8 +52,7 @@ export const config = {
 	 * Base URL the daemon serves on, used to point auto-registered Sink Endpoints
 	 * at our own `/_sink/:id` route. Derived from PORT unless overridden.
 	 */
-	publicBaseUrl:
-		process.env.PUBLIC_BASE_URL ?? `http://localhost:${num("PORT", 3000)}`,
+	publicBaseUrl: process.env.PUBLIC_BASE_URL ?? `http://localhost:${port}`,
 
 	/** How long the `slow` Sink behavior stalls before responding. */
 	sinkSlowDelayMs: num("SINK_SLOW_DELAY_MS", 15_000),

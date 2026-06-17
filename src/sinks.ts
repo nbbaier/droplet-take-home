@@ -3,12 +3,14 @@
  * Endpoint, and the incoming request, produce the Response the in-process
  * receiver should return — exercising a delivery failure mode on demand.
  *
- * The trivial behaviors are implemented. The two stateful/cryptographic ones
- * (`fail-then-recover`, `verify-signature`) are scaffolded: they throw with a
- * TODO so the human can fill in the interesting logic.
+ * All behaviors are implemented. The two with the most logic:
+ * `fail-then-recover` (stateful — uses the Sink's hit count) and
+ * `verify-signature` (recomputes the HMAC over `${timestamp}.${rawBody}`).
  */
 
+import { timingSafeEqual } from "node:crypto";
 import { config } from "./config";
+import { signBody } from "./delivery";
 import type { Endpoint, Sink } from "./types";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -42,21 +44,39 @@ export async function behaviorResponse(
 			return new Response("slow ok", { status: 200 });
 
 		case "fail-then-recover":
-			// TODO (yours): return 500 for the first N hits, then 200, so the worker
+			// Return 500 for the first N hits, then 200, so the worker
 			// retries and eventually succeeds. Use `sink.hits` (already incremented
-			// for this request) against a fail-count threshold — decide the threshold
-			// semantics (config knob? fixed? compare `<=` vs `<`?) and wire it here.
-			throw new Error("fail-then-recover sink behavior not implemented");
+			// for this request) against a fail-count threshold.
+			// Fail-count threshold defined in config.failThenRecoverThreshold
 
-		case "verify-signature":
-			// TODO (yours): verify the HMAC and return 200 (valid) or 401 (invalid).
-			// Reconstruct the signed payload exactly per the contract in delivery.ts:
-			//   signedPayload = `${X-Webhook-Timestamp header}.${raw request body}`
-			//   expected = signBody(signedPayload, endpoint.secret)  // "sha256=<hex>"
-			// then compare against the `X-Webhook-Signature` header (use a constant-
-			// time compare, e.g. node:crypto timingSafeEqual). `endpoint.secret` is
-			// the secret to use — this Endpoint was looked up via sink.endpoint_id.
-			throw new Error("verify-signature sink behavior not implemented");
+			if (sink.hits <= config.failThenRecoverThreshold) {
+				return new Response("internal sink error", { status: 500 });
+			}
+			return new Response("ok", { status: 200 });
+
+		case "verify-signature": {
+			const rawBody = await req.text();
+			const timestamp = req.headers.get("X-Webhook-Timestamp");
+			const signature = req.headers.get("X-Webhook-Signature");
+
+			if (!timestamp || !signature) {
+				return new Response("Missing signature headers", { status: 401 });
+			}
+
+			const signedPayload = `${timestamp}.${rawBody}`;
+			const expectedSignature = signBody(signedPayload, endpoint.secret);
+			const provided = Buffer.from(signature, "utf8");
+			const expected = Buffer.from(expectedSignature, "utf8");
+
+			if (
+				provided.length !== expected.length ||
+				!timingSafeEqual(provided, expected)
+			) {
+				return new Response("Invalid signature", { status: 401 });
+			}
+
+			return new Response("OK", { status: 200 });
+		}
 
 		default: {
 			// Exhaustiveness guard: a new SinkBehavior must be handled above.
