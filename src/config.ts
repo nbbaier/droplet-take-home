@@ -41,6 +41,9 @@ export const config = {
 	/** Exponential backoff: min(cap, base * 2^attempt) + jitter. */
 	backoffBaseMs: num("BACKOFF_BASE_MS", 1_000),
 	backoffCapMs: num("BACKOFF_CAP_MS", 60 * 60 * 1_000),
+
+	/** Max chars of an endpoint's response body we persist (the rest is dropped). */
+	maxResponseBodyChars: num("MAX_RESPONSE_BODY_CHARS", 2_048),
 } as const;
 
 export type Config = typeof config;

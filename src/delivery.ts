@@ -3,9 +3,6 @@ import crypto from "node:crypto";
 /**
  * Outbound delivery: build the envelope, sign it, POST it to the Endpoint, and
  * map the outcome to a result the worker can act on.
- *
- * buildEnvelope is implemented. Signing and the HTTP call (timeout handling,
- * status→outcome mapping) are stubbed — these are step 2/3 and yours to write.
  */
 
 import { config } from "./config";
@@ -22,14 +19,14 @@ export function buildEnvelope(event: Event): DeliveryEnvelope {
 }
 
 /**
- *HMAC-SHA256 over the raw body using the Endpoint
-secret. Return the header value (e.g. `sha256=<hex>`); pair with a timestamp
- * header to prevent replay.
+ * HMAC-SHA256 over `signedPayload` using the Endpoint secret, returned as
+ * `sha256=<hex>`. The caller signs the exact bytes sent (timestamp + raw body),
+ * so the receiver can recompute the same value and verify authenticity + freshness.
  */
-export function signBody(rawBody: string, secret: string): string {
+export function signBody(signedPayload: string, secret: string): string {
 	return `sha256=${crypto
 		.createHmac("sha256", secret)
-		.update(rawBody)
+		.update(signedPayload)
 		.digest("hex")}`;
 }
 
@@ -53,9 +50,12 @@ function parseRetryAfter(header: string | null): number | null {
 
 /**
  * POST the signed envelope to `endpoint.url` with config.requestTimeoutMs.
- * Capture status, a bounded slice of
- * the response body, any network/timeout error, and elapsed ms. Do NOT decide
- * retry-vs-fail here — that's the classifier's job X-Webhook-Signature(step 2).
+ * Captures status, a bounded slice of the response body, any network/timeout
+ * error, and elapsed ms. Does NOT decide retry-vs-fail — that's the classifier's
+ * job (step 2).
+ *
+ * The signature covers `${timestamp}.${rawBody}` — the exact bytes sent — so the
+ * receiver verifies over what it actually received and can reject stale requests.
  */
 export async function deliverOne(
 	endpoint: Endpoint,
@@ -70,30 +70,35 @@ export async function deliverOne(
 	};
 	const start = performance.now();
 
+	const rawBody = JSON.stringify(envelope);
+	const timestamp = new Date().toISOString();
+	const signature = signBody(`${timestamp}.${rawBody}`, endpoint.secret);
+
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), config.requestTimeoutMs);
+
 	try {
-		const signature = signBody(JSON.stringify(envelope.data), endpoint.secret);
-		const controller = new AbortController();
-		const timeout = setTimeout(
-			() => controller.abort(),
-			config.requestTimeoutMs,
-		);
 		const response = await fetch(endpoint.url, {
 			method: "POST",
-			body: JSON.stringify(envelope),
+			body: rawBody,
 			signal: controller.signal,
 			headers: {
+				"Content-Type": "application/json",
+				"X-Webhook-Id": envelope.id,
 				"X-Webhook-Signature": signature,
-				"X-Webhook-Timestamp": new Date().toISOString(),
+				"X-Webhook-Timestamp": timestamp,
 			},
 		});
-		clearTimeout(timeout);
 
 		result.statusCode = response.status;
-		result.responseBody = await response.text();
 		result.retryAfterMs = parseRetryAfter(response.headers.get("Retry-After"));
-		result.durationMs = performance.now() - start;
+		// Read the body while the timeout is still armed, then truncate what we store.
+		const body = await response.text();
+		result.responseBody = body.slice(0, config.maxResponseBodyChars);
 	} catch (error) {
 		result.error = String(error);
+	} finally {
+		clearTimeout(timeout);
 		result.durationMs = performance.now() - start;
 	}
 

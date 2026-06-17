@@ -16,10 +16,14 @@ export function classifyResult(result: DeliveryResult): DeliveryOutcome {
 	if (code === 410) return { action: "gone" };
 
 	if (code === 429 || code === 408 || code === 503 || code >= 500) {
-		return {
-			action: "retry",
-			retryAfterMs: result.retryAfterMs ?? undefined,
-		};
+		// Honor Retry-After only on 429/503 (per design), and never let it exceed
+		// the backoff cap — a hostile/buggy endpoint shouldn't pin a Delivery for days.
+		const honorsRetryAfter = code === 429 || code === 503;
+		const retryAfterMs =
+			honorsRetryAfter && result.retryAfterMs !== null
+				? Math.min(config.backoffCapMs, result.retryAfterMs)
+				: undefined;
+		return { action: "retry", retryAfterMs };
 	}
 
 	if (code >= 400 && code < 500) {
