@@ -71,9 +71,10 @@ returned to the caller once. Used to sign outbound Attempts so the receiver can
 verify authenticity.
 
 ### Signature
-A keyed hash (HMAC-SHA256) of an Attempt's raw request body, computed with the
-Endpoint's Secret and sent as a header alongside a timestamp. The receiver
-recomputes it to confirm the request came from us and was not replayed.
+A keyed hash (HMAC-SHA256) computed with the Endpoint's Secret over the timestamp
+and the raw request body together, sent as a header. The receiver recomputes it
+over the same timestamp + body to confirm the request came from us and was not
+replayed. (The exact construction is in PLAN.md's signature contract.)
 
 ## Avoid
 - **"webhook"** as a noun — it conflates Endpoint, Delivery, and Attempt. Use the

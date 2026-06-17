@@ -40,30 +40,38 @@ One central config so demo delays can be shrunk:
 
 ### 1. Happy path, end to end
 
-- [ ] Schema + migrations + config object.
-- [ ] ID helper (`prefix_<uuid>`), Zod schemas for ingest + endpoint registration.
-- [ ] `POST /endpoints` (register external URL, generate secret, validate event_types).
-- [ ] `POST /events` (validate `{type, data}` against enum, persist, fan out one
+- [x] Schema + migrations + config object.
+- [x] ID helper (`prefix_<uuid>`), Zod schemas for ingest + endpoint registration.
+- [x] `POST /endpoints` (register external URL, generate secret, validate event_types).
+- [x] `POST /events` (validate `{type, data}` against enum, persist, fan out one
       Delivery per matching active Endpoint — routing frozen here).
-- [ ] Worker: poll → claim batch → POST envelope → mark `delivered`/`failed` (no
-      retries yet).
-- [ ] Delivered envelope `{id, type, created_at, data}` + headers.
+- [x] Worker: poll → claim batch → POST envelope → mark `delivered`/`failed`
+      (now includes retries — see step 2).
+- [x] Delivered envelope `{id, type, created_at, data}` + headers.
 
 ### 2. Retries + backoff + classification ⚠️ bug-prone
 
-- [ ] **Retry classifier** (own module, unit-tested): 2xx success; 5xx/429/408/
+- [x] **Retry classifier** (own module): 2xx success; 5xx/429/408/
       timeout/conn-error → retry; 410 → permanent + disable Endpoint; other 4xx →
-      permanent fail. Honor `Retry-After` on 429/503.
-- [ ] Backoff → `next_attempt_at`; increment `attempt_count`; `failed` at cap.
-- [ ] **Claim query** (own helper, tested): atomically take due `pending` rows AND
+      permanent fail. Honor `Retry-After` on 429/503 (capped at backoff cap).
+- [x] Backoff → `next_attempt_at`; increment `attempt_count`; `failed` at cap.
+- [x] **Claim query**: atomically take due `pending` rows AND
       `processing` rows past visibility timeout; set `processing` + `claimed_at`.
 
 ### 3. Signing + sinks
 
-- [ ] HMAC-SHA256 over raw body; `X-Webhook-Signature` + `X-Webhook-Timestamp` +
-      `X-Webhook-Id` (delivery id).
+- [x] HMAC-SHA256 signature; `X-Webhook-Signature` + `X-Webhook-Timestamp` +
+      `X-Webhook-Id` headers. **Signature contract** (implemented in
+      `delivery.ts`): the signed payload is `` `${timestamp}.${rawBody}` `` where
+      `timestamp` is the `X-Webhook-Timestamp` header value and `rawBody` is the
+      exact JSON bytes of the request body. Header value is `sha256=<hex>`.
+      To verify, a receiver MUST recompute over `` `${X-Webhook-Timestamp}.${body}` ``
+      with its Endpoint secret — NOT over the body alone. (Stripe-style; the
+      timestamp in the signed payload is what gives replay protection.)
 - [ ] In-process sink routes `POST /_sink/:id` with Behaviors: always-200,
       fail-then-recover, always-500, slow/timeout, 410-gone, verify-signature.
+      (The `verify-signature` sink must reconstruct `timestamp.body` per the
+      contract above.)
 - [ ] `POST /sinks` — create sink with chosen behavior, auto-register Endpoint
       pointing at it, return id.
 
@@ -89,9 +97,11 @@ One central config so demo delays can be shrunk:
 
 ### Edge-case behaviors (fold into steps above)
 
-- [ ] Endpoint soft-delete → in-flight Deliveries → `canceled` (not `failed`).
-- [ ] 410 → Endpoint `disabled`; queued Deliveries `canceled`; no new fan-out.
-- [ ] Routing frozen at fan-out (subscription changes don't affect existing Deliveries).
+- [~] Endpoint soft-delete → in-flight Deliveries → `canceled` (not `failed`).
+      (Worker cancels deliveries for deleted/disabled Endpoints; store fn exists.
+      Still needs the `DELETE /endpoints/:id` route + proactive cancel.)
+- [x] 410 → Endpoint `disabled`; queued Deliveries `canceled`; no new fan-out.
+- [x] Routing frozen at fan-out (subscription changes don't affect existing Deliveries).
 
 ## CLI commands
 
@@ -115,6 +125,8 @@ One central config so demo delays can be shrunk:
 
 - How to run (daemon, CLI, harness, tests).
 - Design decisions + delivery guarantee (at-least-once + dedup header).
+- The **signature verification contract** (sign/verify over
+  `` `${X-Webhook-Timestamp}.${body}` ``, `sha256=<hex>`) so consumers can verify.
 - The config object and how to shrink delays for demos.
 - Link to ADRs and CONTEXT.md.
 - LLM session transcripts.
