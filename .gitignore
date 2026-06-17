@@ -17,4 +17,7 @@ dist
 logs
 node_modules
 out
+webhooks.db
+webhooks.db-shm
+webhooks.db-wal
 report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
