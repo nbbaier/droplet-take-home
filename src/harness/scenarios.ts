@@ -40,9 +40,7 @@ async function printDeliveryTimeline(
 	for (const a of d.attempts) {
 		const outcome =
 			a.statusCode !== null ? `HTTP ${a.statusCode}` : `error: ${a.error}`;
-		console.log(
-			`      #${a.attemptNumber}  ${outcome}  (${a.durationMs}ms)`,
-		);
+		console.log(`      #${a.attemptNumber}  ${outcome}  (${a.durationMs}ms)`);
 	}
 }
 
@@ -72,14 +70,19 @@ function printStatusSummary(
 const happyPath: Scenario = async (baseUrl) => {
 	console.log("happy-path: healthy endpoint, delivered on first try\n");
 
-	await createSink(baseUrl, { behavior: "always-200" });
+	// Capture the endpoint so we scope waiting/printing to THIS scenario's
+	// deliveries — the daemon's DB is shared across runs/tests. Copy this shape.
+	const { endpoint } = await createSink(baseUrl, { behavior: "always-200" });
 	const { deliveryCount } = await emitEvent(baseUrl, {
 		type: "order.created",
 		data: { orderId: "ord_1", total: 42 },
 	});
 	console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
 
-	const settled = await waitForSettled(baseUrl, { expectedCount: 1 });
+	const settled = await waitForSettled(baseUrl, {
+		endpointId: endpoint.id,
+		expectedCount: 1,
+	});
 	for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
 	printStatusSummary(settled);
 };
@@ -87,6 +90,9 @@ const happyPath: Scenario = async (baseUrl) => {
 // ---------------------------------------------------------------------------
 // Stubbed scenarios — TODO (yours). Each describes setup + what to assert.
 // Implement by copying the happy-path shape; keep print here, assert in the test.
+// Capture the endpoint id from createSink/registerEndpoint and pass it to
+// waitForSettled({ endpointId }) / deliveriesFor(baseUrl, endpointId) so you
+// assert on THIS scenario's deliveries — the daemon's DB is shared across tests.
 // ---------------------------------------------------------------------------
 
 const retryRecovery: Scenario = async (_baseUrl) => {

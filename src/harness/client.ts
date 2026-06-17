@@ -81,14 +81,28 @@ export async function emitEvent(
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify(input),
 	});
-	return json<{ event: { id: string; type: EventType }; deliveryCount: number }>(
-		res,
-	);
+	return json<{
+		event: { id: string; type: EventType };
+		deliveryCount: number;
+	}>(res);
 }
 
 /** All Deliveries, newest first. */
 export async function listDeliveries(baseUrl: string): Promise<Delivery[]> {
 	return json<Delivery[]>(await fetch(`${baseUrl}/deliveries`));
+}
+
+/**
+ * Deliveries for a single Endpoint. The test daemon shares one DB across all
+ * tests (config is frozen at first import, so per-test daemons aren't possible),
+ * so scope assertions to the Endpoint you created rather than the global list.
+ */
+export async function deliveriesFor(
+	baseUrl: string,
+	endpointId: string,
+): Promise<Delivery[]> {
+	const all = await listDeliveries(baseUrl);
+	return all.filter((d) => d.endpointId === endpointId);
 }
 
 /** One Delivery plus its Attempt timeline. */
@@ -100,24 +114,37 @@ export async function getDeliveryWithAttempts(
 }
 
 /**
- * Poll GET /deliveries until every Delivery is in a terminal state
- * (delivered/failed/canceled) or the timeout elapses. Returns the final list.
+ * Poll GET /deliveries until the relevant Deliveries are all in a terminal state
+ * (delivered/failed/canceled) or the timeout elapses. Returns the final list,
+ * scoped to `endpointId` when given.
  *
  * Throws on timeout so a scenario/test never silently asserts against a
  * still-in-flight queue. `expectedCount` (optional) also waits for at least that
- * many Deliveries to exist first, guarding the race where we poll before fan-out
- * rows are visible.
+ * many (scoped) Deliveries to exist first, guarding the race where we poll before
+ * fan-out rows are visible.
+ *
+ * Pass `endpointId` to scope to one Endpoint — important because the test daemon
+ * shares one DB across tests, so the global list mixes deliveries from every test.
  */
 export async function waitForSettled(
 	baseUrl: string,
-	opts: { timeout?: number; pollMs?: number; expectedCount?: number } = {},
+	opts: {
+		timeout?: number;
+		pollMs?: number;
+		expectedCount?: number;
+		endpointId?: string;
+	} = {},
 ): Promise<Delivery[]> {
 	const timeout = opts.timeout ?? 5_000;
 	const pollMs = opts.pollMs ?? 25;
 	const deadline = Date.now() + timeout;
 
 	for (;;) {
-		const deliveries = await listDeliveries(baseUrl);
+		const all = await listDeliveries(baseUrl);
+		const deliveries =
+			opts.endpointId === undefined
+				? all
+				: all.filter((d) => d.endpointId === opts.endpointId);
 		const enough =
 			opts.expectedCount === undefined ||
 			deliveries.length >= opts.expectedCount;
@@ -127,9 +154,7 @@ export async function waitForSettled(
 		if (enough && allTerminal) return deliveries;
 
 		if (Date.now() > deadline) {
-			const summary = deliveries
-				.map((d) => `${d.id}=${d.status}`)
-				.join(", ");
+			const summary = deliveries.map((d) => `${d.id}=${d.status}`).join(", ");
 			throw new Error(
 				`waitForSettled timed out after ${timeout}ms; ` +
 					`deliveries (${deliveries.length}): [${summary}]`,

@@ -16,6 +16,7 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import {
 	createSink,
+	deliveriesFor,
 	emitEvent,
 	getDeliveryWithAttempts,
 	waitForSettled,
@@ -35,7 +36,11 @@ afterAll(async () => {
 });
 
 test("happy-path: healthy endpoint is delivered on the first attempt", async () => {
-	await createSink(daemon.baseUrl, { behavior: "always-200" });
+	// Scope to THIS endpoint: the test daemon shares one DB across all tests, so
+	// the global delivery list mixes in other tests' rows. Copy this shape.
+	const { endpoint } = await createSink(daemon.baseUrl, {
+		behavior: "always-200",
+	});
 
 	const { deliveryCount } = await emitEvent(daemon.baseUrl, {
 		type: "order.created",
@@ -43,7 +48,10 @@ test("happy-path: healthy endpoint is delivered on the first attempt", async () 
 	});
 	expect(deliveryCount).toBe(1);
 
-	const settled = await waitForSettled(daemon.baseUrl, { expectedCount: 1 });
+	const settled = await waitForSettled(daemon.baseUrl, {
+		endpointId: endpoint.id,
+		expectedCount: 1,
+	});
 	expect(settled).toHaveLength(1);
 
 	const delivery = settled[0]!;
