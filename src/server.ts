@@ -9,9 +9,9 @@
 
 import { Hono } from "hono";
 import { fanOut } from "./fanout";
+import { listDeliveries } from "./store/deliveries";
 import { createEndpoint, listEndpoints } from "./store/endpoints";
 import { createEvent } from "./store/events";
-import { listDeliveries } from "./store/deliveries";
 import { ingestSchema, registerEndpointSchema } from "./validation";
 
 export const app = new Hono();
@@ -20,9 +20,14 @@ app.get("/", (c) => c.json({ service: "webhook-delivery", ok: true }));
 
 /** Register an Endpoint pointing at an arbitrary external URL. */
 app.post("/endpoints", async (c) => {
-	const parsed = registerEndpointSchema.safeParse(await c.req.json().catch(() => null));
+	const parsed = registerEndpointSchema.safeParse(
+		await c.req.json().catch(() => null),
+	);
 	if (!parsed.success) {
-		return c.json({ error: "invalid_endpoint", details: parsed.error.flatten() }, 400);
+		return c.json(
+			{ error: "invalid_endpoint", details: parsed.error.flatten() },
+			400,
+		);
 	}
 	const endpoint = await createEndpoint(parsed.data);
 	// Secret is returned once, on creation.
@@ -35,7 +40,10 @@ app.get("/endpoints", async (c) => c.json(await listEndpoints()));
 app.post("/events", async (c) => {
 	const parsed = ingestSchema.safeParse(await c.req.json().catch(() => null));
 	if (!parsed.success) {
-		return c.json({ error: "invalid_event", details: parsed.error.flatten() }, 400);
+		return c.json(
+			{ error: "invalid_event", details: parsed.error.flatten() },
+			400,
+		);
 	}
 	const event = await createEvent(parsed.data);
 	const deliveryCount = await fanOut(event);

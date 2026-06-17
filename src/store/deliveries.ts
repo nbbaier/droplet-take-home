@@ -8,6 +8,7 @@
  */
 
 import type { Row } from "@libsql/client";
+import { config } from "../config";
 import { db } from "../db/client";
 import { newId } from "../ids";
 import type { Delivery, DeliveryStatus } from "../types";
@@ -27,7 +28,10 @@ function rowToDelivery(row: Row): Delivery {
 }
 
 /** Create a pending Delivery, due immediately. Called by fan-out. */
-export async function createDelivery(eventId: string, endpointId: string): Promise<Delivery> {
+export async function createDelivery(
+	eventId: string,
+	endpointId: string,
+): Promise<Delivery> {
 	const now = new Date().toISOString();
 	const delivery: Delivery = {
 		id: newId("dlv"),
@@ -61,26 +65,47 @@ export async function getDelivery(id: string): Promise<Delivery | null> {
 }
 
 export async function listDeliveries(): Promise<Delivery[]> {
-	const result = await db.execute(`SELECT * FROM deliveries ORDER BY created_at DESC`);
+	const result = await db.execute(
+		`SELECT * FROM deliveries ORDER BY created_at DESC`,
+	);
 	return result.rows.map(rowToDelivery);
 }
 
 /**
- * TODO (yours — PLAN step 2, ⚠️ bug-prone):
  * Atomically claim up to `limit` Deliveries that are due, AND reclaim rows stuck
  * in `processing` past the visibility timeout. Set status='processing' and
  * claimed_at=now on the claimed rows, and return them as Delivery[].
  *
  * Candidate set:
- *   (status='pending'    AND next_attempt_at <= now)
+ *   (status='pending' AND next_attempt_at <= now)
  *   OR (status='processing' AND claimed_at < now - visibilityTimeoutMs)
  *
  * Must be safe against overlapping ticks (single-process, but Bun runs the loop
  * concurrently): use an UPDATE ... WHERE id IN (SELECT ... LIMIT ?) RETURNING,
  * or a transaction, so a row is never handed out twice.
  */
-export async function claimBatch(_limit: number): Promise<Delivery[]> {
-	throw new Error("claimBatch not implemented");
+export async function claimBatch(limit: number): Promise<Delivery[]> {
+	const now = new Date().toISOString();
+	const visibilityCutoff = new Date(
+		Date.now() - config.visibilityTimeoutMs,
+	).toISOString();
+
+	const result = await db.execute({
+		sql: `UPDATE deliveries
+			SET status = 'processing', claimed_at = ?, updated_at = ?
+			WHERE id IN (
+				SELECT id FROM deliveries
+				WHERE (status = 'pending' AND next_attempt_at <= ?)
+				   OR (status = 'processing' AND claimed_at < ?)
+				ORDER BY
+					CASE WHEN status = 'pending' THEN next_attempt_at ELSE claimed_at END
+				LIMIT ?
+			)
+			RETURNING *`,
+		args: [now, now, now, visibilityCutoff, limit],
+	});
+
+	return result.rows.map(rowToDelivery);
 }
 
 /** Terminal success: an Attempt returned 2xx. */
@@ -89,6 +114,31 @@ export async function markDelivered(id: string): Promise<void> {
 	await db.execute({
 		sql: `UPDATE deliveries
 			SET status = 'delivered', attempt_count = attempt_count + 1, claimed_at = NULL, updated_at = ?
+			WHERE id = ?`,
+		args: [now, id],
+	});
+}
+
+/** Return to the queue with backoff after a retryable failure. */
+export async function rescheduleDelivery(
+	id: string,
+	nextAttemptAt: string,
+): Promise<void> {
+	const now = new Date().toISOString();
+	await db.execute({
+		sql: `UPDATE deliveries
+			SET status = 'pending', attempt_count = attempt_count + 1, next_attempt_at = ?, claimed_at = NULL, updated_at = ?
+			WHERE id = ?`,
+		args: [nextAttemptAt, now, id],
+	});
+}
+
+/** Terminal cancel for a single Delivery (endpoint gone before attempt). */
+export async function cancelDelivery(id: string): Promise<void> {
+	const now = new Date().toISOString();
+	await db.execute({
+		sql: `UPDATE deliveries
+			SET status = 'canceled', claimed_at = NULL, updated_at = ?
 			WHERE id = ?`,
 		args: [now, id],
 	});
@@ -109,7 +159,9 @@ export async function markFailed(id: string): Promise<void> {
  * Terminal cancel: the target Endpoint was deleted/disabled before delivery.
  * Distinct from `failed` — nothing went wrong with the delivery itself.
  */
-export async function cancelDeliveriesForEndpoint(endpointId: string): Promise<void> {
+export async function cancelDeliveriesForEndpoint(
+	endpointId: string,
+): Promise<void> {
 	const now = new Date().toISOString();
 	await db.execute({
 		sql: `UPDATE deliveries

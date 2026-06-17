@@ -8,13 +8,84 @@
  * terminal) — is stubbed for you (PLAN steps 1–2). This is the orchestration core.
  */
 
+import { classifyResult, computeBackoffMs, shouldRetry } from "./classifier";
 import { config } from "./config";
+import { buildEnvelope, deliverOne } from "./delivery";
+import { recordAttempt } from "./store/attempts";
+import {
+	cancelDeliveriesForEndpoint,
+	cancelDelivery,
+	claimBatch,
+	markDelivered,
+	markFailed,
+	rescheduleDelivery,
+} from "./store/deliveries";
+import { disableEndpoint, getEndpoint } from "./store/endpoints";
+import { getEvent } from "./store/events";
+import type { Delivery } from "./types";
 
 let running = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
+async function processDelivery(delivery: Delivery): Promise<void> {
+	const event = await getEvent(delivery.eventId);
+	if (!event) throw new Error(`Event not found: ${delivery.eventId}`);
+
+	const endpoint = await getEndpoint(delivery.endpointId);
+	if (
+		!endpoint ||
+		endpoint.deletedAt ||
+		endpoint.disabledAt ||
+		endpoint.state === "disabled"
+	) {
+		await cancelDelivery(delivery.id);
+		return;
+	}
+
+	const envelope = buildEnvelope(event);
+	const result = await deliverOne(endpoint, envelope);
+	await recordAttempt({
+		deliveryId: delivery.id,
+		attemptNumber: delivery.attemptCount + 1,
+		statusCode: result.statusCode,
+		responseBody: result.responseBody,
+		error: result.error,
+		durationMs: result.durationMs,
+	});
+
+	const outcome = classifyResult(result);
+
+	switch (outcome.action) {
+		case "delivered":
+			await markDelivered(delivery.id);
+			break;
+		case "failed":
+			await markFailed(delivery.id);
+			break;
+		case "gone":
+			await markFailed(delivery.id);
+			await disableEndpoint(delivery.endpointId);
+			await cancelDeliveriesForEndpoint(delivery.endpointId);
+			break;
+		case "retry":
+			if (shouldRetry(delivery.attemptCount, outcome)) {
+				const delayMs =
+					outcome.retryAfterMs ?? computeBackoffMs(delivery.attemptCount + 1);
+				const nextAttemptAt = new Date(Date.now() + delayMs).toISOString();
+				await rescheduleDelivery(delivery.id, nextAttemptAt);
+			} else {
+				await markFailed(delivery.id);
+			}
+			break;
+		default: {
+			const _exhaustive: never = outcome;
+			throw new Error(`Unknown outcome: ${JSON.stringify(_exhaustive)}`);
+		}
+	}
+}
+
 /**
- * TODO (yours): one pass of work.
+ * one pass of work.
  *  1. claimBatch(config.claimBatchSize)
  *  2. for each claimed Delivery (respect config.concurrency):
  *     - load Event + Endpoint; if Endpoint deleted/disabled → cancel
@@ -22,7 +93,22 @@ let timer: ReturnType<typeof setTimeout> | null = null;
  *     - classify result → markDelivered | reschedule w/ backoff | markFailed
  */
 async function tick(): Promise<void> {
-	throw new Error("worker tick not implemented");
+	const deliveries = await claimBatch(config.claimBatchSize);
+	if (deliveries.length === 0) return;
+
+	let index = 0;
+	const workerCount = Math.min(config.concurrency, deliveries.length);
+
+	await Promise.all(
+		Array.from({ length: workerCount }, async () => {
+			for (;;) {
+				const i = index++;
+				const delivery = deliveries[i];
+				if (!delivery) break;
+				await processDelivery(delivery);
+			}
+		}),
+	);
 }
 
 export function startWorker(): void {

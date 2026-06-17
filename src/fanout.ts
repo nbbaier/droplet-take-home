@@ -12,15 +12,15 @@ import { listActiveEndpoints } from "./store/endpoints";
 import type { Endpoint, Event } from "./types";
 
 /**
- * TODO (yours): does `endpoint` want `eventType`?
+ * Does `endpoint` want `eventType`?
  * - `["*"]` → matches every type
  * - otherwise → exact membership in the array
  */
-export function matches(
-	_endpoint: Endpoint,
-	_eventType: Event["type"],
-): boolean {
-	throw new Error("matches not implemented");
+export function matches(endpoint: Endpoint, eventType: Event["type"]): boolean {
+	if (endpoint.eventTypes.length === 1 && endpoint.eventTypes[0] === "*") {
+		return true;
+	}
+	return endpoint.eventTypes.some((t) => t === eventType);
 }
 
 /** Create Deliveries for every active Endpoint subscribed to this Event's type. */
