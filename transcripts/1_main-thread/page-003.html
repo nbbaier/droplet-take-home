@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 3</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 3/15</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-002.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<span class="current">3</span>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-009.html">9</a>
+<a href="page-010.html">10</a>
+<a href="page-011.html">11</a>
+<a href="page-012.html">12</a>
+<a href="page-013.html">13</a>
+<a href="page-014.html">14</a>
+<a href="page-015.html">15</a>
+<a href="page-004.html">Next &rarr;</a>
+</div>
+
+        
+<div class="message user" id="msg-2026-06-17T19-37-31-875Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-17T19-37-31-875Z" class="timestamp-link"><time datetime="2026-06-17T19:37:31.875Z" data-timestamp="2026-06-17T19:37:31.875Z">2026-06-17T19:37:31.875Z</time></a></div><div class="message-content">
+<div class="user-content"><p>(a) Yes one entrypoint. The spinning up the bun/Hono server will also spin up the worker. 
+(b) Lock this is yes</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-37-39-149Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-37-39-149Z" class="timestamp-link"><time datetime="2026-06-17T19:37:39.149Z" data-timestamp="2026-06-17T19:37:39.149Z">2026-06-17T19:37:39.149Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-37-41-035Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-37-41-035Z" class="timestamp-link"><time datetime="2026-06-17T19:37:41.035Z" data-timestamp="2026-06-17T19:37:41.035Z">2026-06-17T19:37:41.035Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Both locked. </p>
+<p>This one's worth preserving as an ADR — it hits all three bars: it's a real trade-off (external broker vs. SQLite-as-queue vs. in-memory), a reviewer of a webhook <em>delivery</em> service will specifically wonder "why no real queue?", and while not irreversible, swapping the queue substrate later touches the core of the system. Let me write it.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-37-42-184Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-37-42-184Z" class="timestamp-link"><time datetime="2026-06-17T19:37:42.184Z" data-timestamp="2026-06-17T19:37:42.184Z">2026-06-17T19:37:42.184Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01Puo7kMyMr8aJu7BRTDGx8R">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Create adr directory</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">mkdir -p /Users/nbbaier/Code/droplet-take-home/docs/adr &amp;&amp; ls /Users/nbbaier/Code/droplet-take-home/docs/adr</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-17T19-37-46-917Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-17T19-37-46-917Z" class="timestamp-link"><time datetime="2026-06-17T19:37:46.917Z" data-timestamp="2026-06-17T19:37:46.917Z">2026-06-17T19:37:46.917Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>(Bash completed with no output)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-37-57-979Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-37-57-979Z" class="timestamp-link"><time datetime="2026-06-17T19:37:57.979Z" data-timestamp="2026-06-17T19:37:57.979Z">2026-06-17T19:37:57.979Z</time></a></div><div class="message-content"><div class="file-tool write-tool" data-tool-id="toolu_012pcJrS4miAfFzNmAnMWxjb">
+<div class="file-tool-header write-header"><span class="file-tool-icon">📝</span> Write <span class="file-tool-path">0001-sqlite-as-delivery-queue.md</span></div>
+<div class="file-tool-fullpath">/Users/nbbaier/Code/droplet-take-home/docs/adr/0001-sqlite-as-delivery-queue.md</div>
+<div class="truncatable"><div class="truncatable-content"><pre class="file-content"># 1. SQLite as the delivery queue with an in-process polling worker
+
+Date: 2026-06-17
+
+## Status
+
+Accepted
+
+## Context
+
+The service must deliver Events to Endpoints reliably (at-least-once), survive
+restarts, and support retries with backoff. We need a mechanism that moves a
+Delivery from `pending` to a terminal state and re-attempts on failure.
+
+Options considered:
+
+- **External broker** (Redis/BullMQ, RabbitMQ, SQS). Battle-tested queue
+  semantics, but adds infrastructure a reviewer must stand up, and works against
+  the goal of a single, locally-debuggable binary.
+- **In-memory queue.** Trivial to write, but loses all in-flight Deliveries on
+  restart — directly undercuts the persistence and delivery-guarantee goals.
+- **SQLite as the queue.** The `deliveries` table *is* the queue. An in-process
+  worker polls for due rows, claims them, delivers, and writes results back.
+
+We are already using SQLite for persistence, the system is single-process, and
+backoff maps naturally onto a `next_attempt_at` timestamp column.
+
+## Decision
+
+Use the `deliveries` table as the queue, driven by an **in-process polling
+worker** started alongside the Hono server (one entrypoint).
+
+Each tick the worker atomically claims a batch (`pending` rows that are due, plus
+`processing` rows past a visibility timeout) by setting `status=&#39;processing&#39;` and
+`claimed_at=now`, delivers them concurrently (with a cap), and writes back the
+outcome. Backoff is a future `next_attempt_at`. A **visibility timeout** reclaims
+rows stranded in `processing` by a crash, preserving the at-least-once guarantee.
+
+## Consequences
+
+- No external infrastructure; `bun run dev` starts API + worker together.
+- The queue is just a table — observability and the dashboard are plain `SELECT`s.
+- Throughput is bounded by one process and SQLite write throughput. Acceptable for
+  this assignment.
+- **Future work:** the worker is a separate module that could run as its own
+  entrypoint against the same DB for horizontal scaling; a real broker could be
+  swapped in behind the same Delivery interface.
+</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-17T19-37-58-169Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-17T19-37-58-169Z" class="timestamp-link"><time datetime="2026-06-17T19:37:58.169Z" data-timestamp="2026-06-17T19:37:58.169Z">2026-06-17T19:37:58.169Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>File created successfully at: /Users/nbbaier/Code/droplet-take-home/docs/adr/0001-sqlite-as-delivery-queue.md (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-38-02-418Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-38-02-418Z" class="timestamp-link"><time datetime="2026-06-17T19:38:02.418Z" data-timestamp="2026-06-17T19:38:02.418Z">2026-06-17T19:38:02.418Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-38-12-971Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-38-12-971Z" class="timestamp-link"><time datetime="2026-06-17T19:38:12.971Z" data-timestamp="2026-06-17T19:38:12.971Z">2026-06-17T19:38:12.971Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>ADR 0001 written.</p>
+<hr />
+<p><strong>Question 6 — Authentication: there are two sides, and they're different problems.</strong></p>
+<p>The assignment lists "authentication" as a production concern. For a webhook service that splits into two distinct questions:</p>
+<p><strong>(a) Outbound — proving to the Endpoint that the request really came from you.</strong>
+The standard is <strong>HMAC payload signing</strong>: each Endpoint has a secret (generated at registration), and every Attempt includes a signature header (e.g. <code>X-Signature: sha256=...</code>) computed over the raw request body, plus a timestamp header to prevent replay. The consumer recomputes the HMAC with its copy of the secret and compares. This is what Stripe/GitHub/Svix do, and it pairs naturally with the secret field we already put on Endpoint.</p>
+<p><strong>(b) Inbound — who's allowed to call <em>your</em> API</strong> (register an Endpoint, ingest an Event)?
+Options: nothing (open API), a static API key/bearer token, or full auth. For a take-home, full auth (users, sessions) is scope creep that distracts from the delivery engine.</p>
+<p>My recommendation:
+- <strong>Outbound: do it.</strong> HMAC-SHA256 over the raw body + a timestamp header, signature in <code>X-Webhook-Signature</code>. This is the high-value, on-topic authentication for a <em>delivery</em> service, it's ~20 lines, and your test harness's receivers can actually verify it (great demo: show a receiver rejecting a bad signature). Generate and return the secret once at registration.
+- <strong>Inbound: keep it light.</strong> A single static API key checked via middleware (configurable, off by default in dev), and explicitly call it out as "scoped down — real auth/multi-tenancy is future work." Don't build user accounts.</p>
+<p>The tension: time budget. HMAC signing is clearly worth it (on-topic, cheap, demoable). Inbound auth is mostly box-checking — I'd do the minimum and say so.</p>
+<p>Want HMAC outbound signing + a minimal static-key (or fully open) inbound API? And for inbound: static key, or just leave it open and document it?</p></div></div></div>
+<div class="message user" id="msg-2026-06-17T19-41-22-732Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-17T19-41-22-732Z" class="timestamp-link"><time datetime="2026-06-17T19:41:22.732Z" data-timestamp="2026-06-17T19:41:22.732Z">2026-06-17T19:41:22.732Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Absolutely sold on the HMAC signing here, that's what I had envisioned. I'm less sold on the inbound API key idea here.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-41-28-711Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-41-28-711Z" class="timestamp-link"><time datetime="2026-06-17T19:41:28.711Z" data-timestamp="2026-06-17T19:41:28.711Z">2026-06-17T19:41:28.711Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-41-35-772Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-41-35-772Z" class="timestamp-link"><time datetime="2026-06-17T19:41:35.772Z" data-timestamp="2026-06-17T19:41:35.772Z">2026-06-17T19:41:35.772Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Fair — let me make the case for the lightest option and you can veto it.</p>
+<p>For a take-home whose star is the <strong>delivery engine</strong>, inbound auth is pure box-checking, and a static API key actually has a cost beyond the ~5 lines: it adds friction to <em>every</em> curl, every harness call, and every dashboard request, which makes your demo and your reviewer's first-run experience worse for nearly zero signal. The reviewer already sees real auth thinking in your HMAC work.</p>
+<p>So my revised recommendation: <strong>leave the inbound API open, and document it as a deliberate scope decision</strong> — one sentence in the README: <em>"The management/ingest API is unauthenticated by design for this exercise; in production it'd sit behind an API key or mTLS with per-tenant scoping. The security investment here is on the outbound path (HMAC), which is the webhook-specific concern."</em> That turns an omission into a visible, reasoned choice — which the rubric rewards more than a token key.</p>
+<p>The one caveat: if you ever expose this beyond localhost, an open ingest API is an open relay. Since this runs locally for the assignment, that's fine — just name it.</p>
+<p>Want to go fully open + documented, or do you still want a key behind a config flag (off by default)?</p></div></div></div>
+<div class="message user" id="msg-2026-06-17T19-42-26-830Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-17T19-42-26-830Z" class="timestamp-link"><time datetime="2026-06-17T19:42:26.830Z" data-timestamp="2026-06-17T19:42:26.830Z">2026-06-17T19:42:26.830Z</time></a></div><div class="message-content">
+<div class="user-content"><p>I think fully open + documented is the way to go here.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-42-29-712Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-42-29-712Z" class="timestamp-link"><time datetime="2026-06-17T19:42:29.712Z" data-timestamp="2026-06-17T19:42:29.712Z">2026-06-17T19:42:29.712Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-42-30-103Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-42-30-103Z" class="timestamp-link"><time datetime="2026-06-17T19:42:30.103Z" data-timestamp="2026-06-17T19:42:30.103Z">2026-06-17T19:42:30.103Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Settled. Let me capture the two outbound-auth terms in the glossary, since your harness's receivers and any consumer will reason about them by name.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-42-34-220Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-42-34-220Z" class="timestamp-link"><time datetime="2026-06-17T19:42:34.220Z" data-timestamp="2026-06-17T19:42:34.220Z">2026-06-17T19:42:34.220Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01RHZy8EjusavVohbSzAfPFC">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">CONTEXT.md</span></div>
+<div class="file-tool-fullpath">/Users/nbbaier/Code/droplet-take-home/CONTEXT.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">### Attempt
+A single HTTP request made in service of a Delivery. A Delivery may have multiple
+Attempts (retries). Carries the response status/body of that one try.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">### Attempt
+A single HTTP request made in service of a Delivery. A Delivery may have multiple
+Attempts (retries). Carries the response status/body of that one try.
+
+### Secret
+A per-Endpoint shared secret, generated when the Endpoint is registered and
+returned to the caller once. Used to sign outbound Attempts so the receiver can
+verify authenticity.
+
+### Signature
+A keyed hash (HMAC-SHA256) of an Attempt&#39;s raw request body, computed with the
+Endpoint&#39;s Secret and sent as a header alongside a timestamp. The receiver
+recomputes it to confirm the request came from us and was not replayed.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-17T19-42-34-369Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-17T19-42-34-369Z" class="timestamp-link"><time datetime="2026-06-17T19:42:34.369Z" data-timestamp="2026-06-17T19:42:34.369Z">2026-06-17T19:42:34.369Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/nbbaier/Code/droplet-take-home/CONTEXT.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-42-39-730Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-42-39-730Z" class="timestamp-link"><time datetime="2026-06-17T19:42:39.730Z" data-timestamp="2026-06-17T19:42:39.730Z">2026-06-17T19:42:39.730Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-42-49-614Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-42-49-614Z" class="timestamp-link"><time datetime="2026-06-17T19:42:49.614Z" data-timestamp="2026-06-17T19:42:49.614Z">2026-06-17T19:42:49.614Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Captured.</p>
+<hr />
+<p><strong>Question 7 — Do you store each Attempt as its own row, or just keep a counter + last-response on the Delivery?</strong></p>
+<p>We separated <strong>Delivery</strong> (the durable unit) from <strong>Attempt</strong> (one HTTP try) in the glossary — but your brain dump's schema only has <code>event_logs</code> with a single <code>response</code> field, which collapses them. Now's the time to decide whether Attempt is a real table or just fields.</p>
+<p><strong>Option A — Attempt is just fields on Delivery:</strong> <code>attempt_count</code>, <code>last_status_code</code>, <code>last_response</code>, <code>last_attempted_at</code>. Each retry overwrites the previous result.
+- Pro: one fewer table, simpler queries.
+- Con: you lose history. The dashboard can't show "this Delivery failed with 503, then 503, then succeeded" — which is exactly the retry story you're building the whole system to tell. You'd be deleting the most interesting observability data.</p>
+<p><strong>Option B — Attempt is its own table:</strong> <code>attempts(id, delivery_id, attempt_number, status_code, response_body, error, duration_ms, created_at)</code>. The Delivery keeps its status/<code>next_attempt_at</code>/<code>attempt_count</code>; each try appends an Attempt row.
+- Pro: full audit trail per Delivery, a great drill-down in the dashboard, real latency metrics, and it makes the retry behavior <em>visible</em> (which is the point).
+- Con: one more table and a join.</p>
+<p>My recommendation: <strong>Option B.</strong> The Delivery/Attempt split we made in the glossary should be real in the schema, not just vocabulary. The whole value proposition of this service is reliable retried delivery — storing each Attempt is what lets you <em>show</em> that working, and it's where your metrics (success rate, latency, attempts-to-success) come from. It's one small table.</p>
+<p>So the schema becomes: <code>endpoints</code>, <code>events</code>, <code>deliveries</code> (the queue + current status), <code>attempts</code> (the per-try log). Want to go with B?</p></div></div></div>
+<div class="message user" id="msg-2026-06-17T19-44-08-663Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-17T19-44-08-663Z" class="timestamp-link"><time datetime="2026-06-17T19:44:08.663Z" data-timestamp="2026-06-17T19:44:08.663Z">2026-06-17T19:44:08.663Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Go with B here, the benefits outway the costs. It also gives more surface for observability features if there's time to implement them</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-44-12-263Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-44-12-263Z" class="timestamp-link"><time datetime="2026-06-17T19:44:12.263Z" data-timestamp="2026-06-17T19:44:12.263Z">2026-06-17T19:44:12.263Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-44-21-135Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-44-21-135Z" class="timestamp-link"><time datetime="2026-06-17T19:44:21.135Z" data-timestamp="2026-06-17T19:44:21.135Z">2026-06-17T19:44:21.135Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Agreed — and it gives the observability features room to grow. Four tables: <code>endpoints</code>, <code>events</code>, <code>deliveries</code>, <code>attempts</code>.</p>
+<hr />
+<p><strong>Question 8 — The Event payload shape: what does a caller send to ingest, and what do you POST to the Endpoint?</strong></p>
+<p>Your brain dump flagged this as open ("Validation — need to decide on shape"). Two related shapes:</p>
+<p><strong>(a) The ingest shape</strong> (what a caller POSTs to your <code>/events</code> endpoint). My rec: a thin envelope —</p>
+<pre><code class="language-json">{ &quot;type&quot;: &quot;order.created&quot;, &quot;data&quot;: { ...arbitrary caller JSON... } }
+</code></pre>
+<p>You validate <code>type</code> against the fixed enum (Q2) and that <code>data</code> is a JSON object. You stay agnostic about what's <em>inside</em> <code>data</code> — that's the caller's domain, not yours. Optionally accept a caller-supplied <code>idempotency_key</code> so re-ingesting the same event doesn't double-fan-out (nice production touch; could be future work).</p>
+<p><strong>(b) The delivered shape</strong> (what the Endpoint receives). My rec: wrap the event in a delivery envelope so the consumer gets metadata, not just raw data —</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;evt_...&quot;,          // event id, stable across retries (dedup key from Q3)
+  &quot;type&quot;: &quot;order.created&quot;,
+  &quot;created_at&quot;: &quot;...&quot;,
+  &quot;data&quot;: { ... }
+}
+</code></pre>
+<p>…plus headers: <code>X-Webhook-Id</code> (delivery id), <code>X-Webhook-Timestamp</code>, <code>X-Webhook-Signature</code> (HMAC from Q6). The signature is over this exact serialized body.</p>
+<p>The key taste decision: <strong>you own the envelope, the caller owns <code>data</code>.</strong> That separation is what lets the system be generic while still giving consumers stable, signable, dedup-able metadata.</p>
+<p>Two things to confirm:
+1. Envelope-with-opaque-<code>data</code>, validated on <code>type</code> + "is an object" — yes?
+2. Idempotency key on ingest: include it now, or push to future work?</p></div></div></div>
+<div class="message user" id="msg-2026-06-17T19-45-34-167Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-17T19-45-34-167Z" class="timestamp-link"><time datetime="2026-06-17T19:45:34.167Z" data-timestamp="2026-06-17T19:45:34.167Z">2026-06-17T19:45:34.167Z</time></a></div><div class="message-content">
+<div class="user-content"><p>The shape in (b) makes the most sense to me: id, type, created_at, data</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-45-38-285Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-45-38-285Z" class="timestamp-link"><time datetime="2026-06-17T19:45:38.285Z" data-timestamp="2026-06-17T19:45:38.285Z">2026-06-17T19:45:38.285Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-45-43-708Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-45-43-708Z" class="timestamp-link"><time datetime="2026-06-17T19:45:43.708Z" data-timestamp="2026-06-17T19:45:43.708Z">2026-06-17T19:45:43.708Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Good — that's the delivered envelope. Two loose ends from that question:</p>
+<p><strong>The ingest shape (a):</strong> I'd mirror it — caller POSTs <code>{ "type": "...", "data": {...} }</code>, you validate <code>type</code> against the enum and that <code>data</code> is an object, then you generate the <code>id</code> and <code>created_at</code> yourself (the caller doesn't get to set those — they're yours, and <code>id</code> is the stable dedup key). Good?</p>
+<p><strong>Idempotency key on ingest:</strong> the question is whether re-POSTing the "same" event (e.g. a caller retries your ingest endpoint after a timeout) creates a second Event and a second fan-out, or dedups to the first. My recommendation: <strong>push to future work.</strong> It's a real production concern, but it adds a uniqueness constraint and lookup path that isn't core to the delivery engine you're being judged on, and your harness controls ingestion so it won't accidentally double-fire. One README sentence naming it as a known gap is enough.</p>
+<p>Lock in caller-supplies-<code>type</code>+<code>data</code> / system-owns-<code>id</code>+<code>created_at</code>, and idempotency as future work?</p></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-002.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<span class="current">3</span>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-009.html">9</a>
+<a href="page-010.html">10</a>
+<a href="page-011.html">11</a>
+<a href="page-012.html">12</a>
+<a href="page-013.html">13</a>
+<a href="page-014.html">14</a>
+<a href="page-015.html">15</a>
+<a href="page-004.html">Next &rarr;</a>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

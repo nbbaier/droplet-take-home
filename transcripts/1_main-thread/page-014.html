@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 14</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 14/15</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-013.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-009.html">9</a>
+<a href="page-010.html">10</a>
+<a href="page-011.html">11</a>
+<a href="page-012.html">12</a>
+<a href="page-013.html">13</a>
+<span class="current">14</span>
+<a href="page-015.html">15</a>
+<a href="page-015.html">Next &rarr;</a>
+</div>
+
+        
+<div class="message user" id="msg-2026-06-18T01-30-44-854Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-18T01-30-44-854Z" class="timestamp-link"><time datetime="2026-06-18T01:30:44.854Z" data-timestamp="2026-06-18T01:30:44.854Z">2026-06-18T01:30:44.854Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Done with the metrics functions take a look.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-30-51-072Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-30-51-072Z" class="timestamp-link"><time datetime="2026-06-18T01:30:51.072Z" data-timestamp="2026-06-18T01:30:51.072Z">2026-06-18T01:30:51.072Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01BAN4QVCNg6k7mNVruGAxma">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Show metrics/cli/test changes since scaffold</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">echo &#34;=== commits ===&#34; &amp;&amp; git log --oneline -2 &amp;&amp; echo &amp;&amp; echo &#34;=== status ===&#34; &amp;&amp; git status --short &amp;&amp; echo &amp;&amp; echo &#34;=== diff (working tree + last commit since b7cc35e) ===&#34; &amp;&amp; git diff b7cc35e -- src/store/metrics.ts src/cli/index.ts test/scenarios.test.ts</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-30-51-218Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-30-51-218Z" class="timestamp-link"><time datetime="2026-06-18T01:30:51.218Z" data-timestamp="2026-06-18T01:30:51.218Z">2026-06-18T01:30:51.218Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>=== commits ===
+b7cc35e feat(observability): scaffold /status, status CLI, JSON-lines logs (PLAN step 5)
+ff614b8 test: implement full scenario tests and harness updates
+
+=== status ===
+ M src/cli/index.ts
+ M src/harness/index.ts
+ M src/server.ts
+ M src/store/metrics.ts
+ M src/testing/bootstrap.ts
+ M src/types.ts
+ M test/scenarios.test.ts
+
+=== diff (working tree + last commit since b7cc35e) ===
+diff --git a/src/cli/index.ts b/src/cli/index.ts
+index f82ec20..9ae3b70 100644
+--- a/src/cli/index.ts
++++ b/src/cli/index.ts
+@@ -63,12 +63,6 @@ function renderStatus(s: StatusSnapshot): string {
+ 	);
+ 	lines.push(`  throughput         ${s.windowed.throughput}`);
+ 	lines.push(`  success rate       ${s.windowed.successRate ?? &quot;n/a&quot;}`);
+-	lines.push(
+-		`  latency p50/p95    ${s.windowed.latencyMs.p50 ?? &quot;n/a&quot;} / ${s.windowed.latencyMs.p95 ?? &quot;n/a&quot;} ms`,
+-	);
+-	lines.push(
+-		`  attempts-to-success avg ${s.windowed.attemptsToSuccess.avg ?? &quot;n/a&quot;}`,
+-	);
+ 	return lines.join(&quot;\n&quot;);
+ }
+ 
+diff --git a/src/store/metrics.ts b/src/store/metrics.ts
+index e789cbb..c2d4cda 100644
+--- a/src/store/metrics.ts
++++ b/src/store/metrics.ts
+@@ -7,7 +7,6 @@
+  *  - Simple aggregations (deliveryStatusCounts, endpointStateCounts,
+  *    inBackoffCount, eventCount) — implemented.
+  *  - Windowed / statistical metrics (recentThroughput, successRate,
+- *    attemptLatencyPercentiles, attemptsToSuccess) — STUBBED for the human, who
+  *    owns the real decisions (window bounds, p95 with small N). Each returns a
+  *    typed placeholder so getStatusSnapshot returns a complete 200.
+  */
+@@ -88,54 +87,37 @@ export async function eventCount(): Promise&lt;number&gt; {
+ 
+ /**
+  * Deliveries reaching a terminal state within `windowMs`.
+- * TODO (yours): COUNT deliveries WHERE status IN (&#x27;delivered&#x27;,&#x27;failed&#x27;,&#x27;canceled&#x27;)
+- * AND updated_at &gt;= (now - windowMs). Decide the window anchor (updated_at is the
+- * terminal-transition time here) and whether the lower bound is inclusive.
+  */
+ export async function recentThroughput(
+-	_windowMs: number = DEFAULT_WINDOW_MS,
++	windowMs: number = DEFAULT_WINDOW_MS,
+ ): Promise&lt;number&gt; {
+-	return 0;
++	const window = new Date(Date.now() - windowMs).toISOString();
++	const result = await db.execute({
++		sql: `SELECT COUNT(*) AS n FROM deliveries
++			WHERE status IN (&#x27;delivered&#x27;,&#x27;failed&#x27;,&#x27;canceled&#x27;) AND updated_at &gt;= ?`,
++		args: [window],
++	});
++	return Number(result.rows[0]?.n ?? 0);
+ }
+ 
+ /**
+  * Success rate over the window: delivered ÷ (delivered + failed).
+- * TODO (yours): COUNT delivered and failed deliveries with updated_at in-window,
+- * return delivered/(delivered+failed). Return null when the denominator is 0
+- * (no terminal deliveries yet) rather than 0 or NaN. `canceled` is excluded
+- * (nothing went wrong with the delivery itself — see CONTEXT.md).
+  */
+ export async function successRate(
+-	_windowMs: number = DEFAULT_WINDOW_MS,
++	windowMs: number = DEFAULT_WINDOW_MS,
+ ): Promise&lt;number | null&gt; {
+-	return null;
+-}
++	const window = new Date(Date.now() - windowMs).toISOString();
++	const result = await db.execute({
++		sql: `SELECT COUNT(*) AS n FROM deliveries
++			WHERE status IN (&#x27;delivered&#x27;,&#x27;failed&#x27;,&#x27;canceled&#x27;) AND updated_at &gt;= ?`,
++		args: [window],
++	});
++	const total = Number(result.rows[0]?.n ?? 0);
++	const failed = Number(result.rows[0]?.failed ?? 0);
+ 
+-/**
+- * p50/p95 of attempt duration_ms over the window.
+- * TODO (yours): SELECT duration_ms FROM attempts WHERE created_at in-window, then
+- * compute percentiles in JS (SQLite has no percentile fn). Decide the
+- * interpolation method and how to behave with small N (e.g. N&lt;2 → p95 == max?).
+- * Return { p50: null, p95: null } when there are no attempts in the window.
+- */
+-export async function attemptLatencyPercentiles(
+-	_windowMs: number = DEFAULT_WINDOW_MS,
+-): Promise&lt;{ p50: number | null; p95: number | null }&gt; {
+-	return { p50: null, p95: null };
+-}
++	if (total + failed === 0) return null;
+ 
+-/**
+- * Distribution / average of attempts taken for delivered Deliveries.
+- * TODO (yours): for deliveries WHERE status = &#x27;delivered&#x27;, use attempt_count to
+- * build a distribution (index = attempt number, value = count) and an average.
+- * Decide whether to window this. Return { avg: null, distribution: [] } when
+- * there are no delivered deliveries.
+- */
+-export async function attemptsToSuccess(): Promise&lt;{
+-	avg: number | null;
+-	distribution: number[];
+-}&gt; {
+-	return { avg: null, distribution: [] };
++	return total / (total + failed);
+ }
+ 
+ /**
+@@ -153,13 +135,10 @@ export async function getStatusSnapshot(
+ 		eventCount(),
+ 	]);
+ 
+-	const [throughput, successRateValue, latencyMs, attemptsToSuccessValue] =
+-		await Promise.all([
+-			recentThroughput(windowMs),
+-			successRate(windowMs),
+-			attemptLatencyPercentiles(windowMs),
+-			attemptsToSuccess(),
+-		]);
++	const [throughput, successRateValue] = await Promise.all([
++		recentThroughput(windowMs),
++		successRate(windowMs),
++	]);
+ 
+ 	return {
+ 		generatedAt: new Date().toISOString(),
+@@ -171,8 +150,6 @@ export async function getStatusSnapshot(
+ 		windowed: {
+ 			throughput,
+ 			successRate: successRateValue,
+-			latencyMs,
+-			attemptsToSuccess: attemptsToSuccessValue,
+ 		},
+ 	};
+ }
+diff --git a/test/scenarios.test.ts b/test/scenarios.test.ts
+index 77f23a6..f2c9ebc 100644
+--- a/test/scenarios.test.ts
++++ b/test/scenarios.test.ts
+@@ -345,24 +345,10 @@ describe(&quot;status&quot;, () =&gt; {
+ 
+ 		// Windowed metrics exist in the shape even while stubbed.
+ 		expect(snapshot.windowed).toBeDefined();
+-		expect(snapshot.windowed.latencyMs).toBeDefined();
+ 	});
+ 
+-	// Advanced/windowed metric math is stubbed for the human — assert once implemented.
+-	test.todo(
+-		&quot;windowed throughput counts terminal deliveries in the window&quot;,
+-		() =&gt; {},
+-	);
+-	test.todo(
+-		&quot;successRate = delivered ÷ (delivered + failed) over the window&quot;,
+-		() =&gt; {},
+-	);
+-	test.todo(
+-		&quot;attempt latency p50/p95 computed from attempts.duration_ms&quot;,
+-		() =&gt; {},
+-	);
+-	test.todo(
+-		&quot;attemptsToSuccess distribution/avg for delivered deliveries&quot;,
+-		() =&gt; {},
+-	);
++	test.todo(&quot;windowed throughput counts terminal deliveries in the window&quot;, () =&gt; {});
++	test.todo(&quot;successRate = delivered ÷ (delivered + failed) over the window&quot;, () =&gt; {});
++	test.todo(&quot;attempt latency p50/p95 computed from attempts.duration_ms&quot;, () =&gt; {});
++	test.todo(&quot;attemptsToSuccess distribution/avg for delivered deliveries&quot;, () =&gt; {});
+ });</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-31-13-490Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-31-13-490Z" class="timestamp-link"><time datetime="2026-06-18T01:31:13.490Z" data-timestamp="2026-06-18T01:31:13.490Z">2026-06-18T01:31:13.490Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-31-14-459Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-31-14-459Z" class="timestamp-link"><time datetime="2026-06-18T01:31:14.459Z" data-timestamp="2026-06-18T01:31:14.459Z">2026-06-18T01:31:14.459Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>This needs a careful look — I'm already seeing a real bug. Let me get the full picture across all modified files.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-31-14-971Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-31-14-971Z" class="timestamp-link"><time datetime="2026-06-18T01:31:14.971Z" data-timestamp="2026-06-18T01:31:14.971Z">2026-06-18T01:31:14.971Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01VwrF3xFrGVWDvX3R5Bd57Y">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Show remaining modified files diff</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">git diff b7cc35e -- src/types.ts src/server.ts src/harness/index.ts src/testing/bootstrap.ts</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-31-15-056Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-31-15-056Z" class="timestamp-link"><time datetime="2026-06-18T01:31:15.056Z" data-timestamp="2026-06-18T01:31:15.056Z">2026-06-18T01:31:15.056Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>diff --git a/src/harness/index.ts b/src/harness/index.ts
+index 9ea8962..8feafc1 100644
+--- a/src/harness/index.ts
++++ b/src/harness/index.ts
+@@ -14,7 +14,7 @@ import { type Scenario, scenarioNames, scenarios } from &quot;./scenarios&quot;;
+ 
+ async function runScenario(name: string, scenario: Scenario): Promise&lt;void&gt; {
+ 	const daemon = await startTestDaemon();
+-	console.log(`\n▶ scenario: ${name}  (daemon @ ${daemon.baseUrl})\n`);
++	console.log(`\n▶ scenario: ${name}  (daemon @ ${daemon.baseUrl})`);
+ 	try {
+ 		await scenario(daemon.baseUrl);
+ 		console.log(`\n✓ ${name} complete\n`);
+diff --git a/src/server.ts b/src/server.ts
+index 9ce6dfb..26e74ff 100644
+--- a/src/server.ts
++++ b/src/server.ts
+@@ -4,7 +4,7 @@
+  * and reports state.
+  *
+  * Wired: register Endpoint, ingest Event, list Endpoints/Deliveries, create Sink,
+- * and the in-process Sink receiver. Status/metrics and delete are TODO (step 5).
++ * and the in-process Sink receiver.
+  */
+ 
+ import { Hono } from &quot;hono&quot;;
+diff --git a/src/testing/bootstrap.ts b/src/testing/bootstrap.ts
+index a290c84..8e78565 100644
+--- a/src/testing/bootstrap.ts
++++ b/src/testing/bootstrap.ts
+@@ -17,6 +17,7 @@
+ export interface TestDaemon {
+ 	/** Base URL of the isolated daemon, e.g. http://localhost:53187 */
+ 	baseUrl: string;
++	dbPath: string;
+ 	/** Stop the worker + server and delete the temp DB. Idempotent-ish; call once. */
+ 	stop(): Promise&lt;void&gt;;
+ }
+@@ -70,6 +71,7 @@ export async function startTestDaemon(): Promise&lt;TestDaemon&gt; {
+ 
+ 	return {
+ 		baseUrl: `http://localhost:${server.port}`,
++		dbPath: dbPath,
+ 		async stop() {
+ 			stopWorker();
+ 			server.stop(true);
+diff --git a/src/types.ts b/src/types.ts
+index d8da84b..a3ed723 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -142,10 +142,6 @@ export interface StatusSnapshot {
+ 		throughput: number;
+ 		/** delivered ÷ (delivered + failed) over the window, or null if no terminal deliveries. */
+ 		successRate: number | null;
+-		/** Attempt duration_ms percentiles over the window. */
+-		latencyMs: { p50: number | null; p95: number | null };
+-		/** Distribution/avg attempts for delivered deliveries. */
+-		attemptsToSuccess: { avg: number | null; distribution: number[] };
+ 	};
+ }</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-31-31-278Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-31-31-278Z" class="timestamp-link"><time datetime="2026-06-18T01:31:31.278Z" data-timestamp="2026-06-18T01:31:31.278Z">2026-06-18T01:31:31.278Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-31-32-214Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-31-32-214Z" class="timestamp-link"><time datetime="2026-06-18T01:31:32.214Z" data-timestamp="2026-06-18T01:31:32.214Z">2026-06-18T01:31:32.214Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>I see a real bug. Let me confirm it at runtime before reporting — set up one delivered + one failed delivery and check <code>successRate</code>:</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-31-37-905Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-31-37-905Z" class="timestamp-link"><time datetime="2026-06-18T01:31:37.905Z" data-timestamp="2026-06-18T01:31:37.905Z">2026-06-18T01:31:37.905Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01RnaPD6nuDJj47R3c7cdW1i">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Demonstrate the successRate bug at runtime</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">bunx tsc --noEmit &amp;&amp; echo &#34;tsc OK&#34;
+PORT=3996 DATABASE_URL=&#34;file:./tmp-sr.db&#34; bun -e &#39;
+import { migrate } from &#34;./src/db/migrate&#34;;
+import { db } from &#34;./src/db/client&#34;;
+import { getStatusSnapshot, successRate } from &#34;./src/store/metrics&#34;;
+await migrate();
+const now = new Date().toISOString();
+// seed: 1 delivered, 1 failed, 1 canceled (all terminal, in-window)
+await db.execute({ sql:`INSERT INTO endpoints (id,url,secret,event_types,state,created_at,updated_at) VALUES (?,?,?,?,?,?,?)`, args:[&#34;ep_x&#34;,&#34;http://x&#34;,&#34;s&#34;,&#34;[\&#34;*\&#34;]&#34;,&#34;active&#34;,now,now]});
+await db.execute({ sql:`INSERT INTO events (id,type,data,created_at) VALUES (?,?,?,?)`, args:[&#34;evt_x&#34;,&#34;order.created&#34;,&#34;{}&#34;,now]});
+for (const [id,st] of [[&#34;d1&#34;,&#34;delivered&#34;],[&#34;d2&#34;,&#34;failed&#34;],[&#34;d3&#34;,&#34;canceled&#34;]]) {
+  await db.execute({ sql:`INSERT INTO deliveries (id,event_id,endpoint_id,status,attempt_count,created_at,updated_at) VALUES (?,?,?,?,?,?,?)`, args:[id,&#34;evt_x&#34;,&#34;ep_x&#34;,st,1,now,now]});
+}
+console.log(&#34;delivered=1, failed=1, canceled=1&#34;);
+console.log(&#34;successRate =&#34;, await successRate(), &#34; (correct = 0.5, since delivered/(delivered+failed) = 1/2)&#34;);
+&#39; 2&gt;&amp;1
+rm -f tmp-sr.db*</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-31-40-039Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-31-40-039Z" class="timestamp-link"><time datetime="2026-06-18T01:31:40.039Z" data-timestamp="2026-06-18T01:31:40.039Z">2026-06-18T01:31:40.039Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>tsc OK
+delivered=1, failed=1, canceled=1
+successRate = 1  (correct = 0.5, since delivered/(delivered+failed) = 1/2)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-32-00-735Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-32-00-735Z" class="timestamp-link"><time datetime="2026-06-18T01:32:00.735Z" data-timestamp="2026-06-18T01:32:00.735Z">2026-06-18T01:32:00.735Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-32-15-728Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-32-15-728Z" class="timestamp-link"><time datetime="2026-06-18T01:32:15.728Z" data-timestamp="2026-06-18T01:32:15.728Z">2026-06-18T01:32:15.728Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Confirmed at runtime: <code>successRate</code> returns <strong>1.0</strong> when the right answer is <strong>0.5</strong>. Here's the review.</p>
+<h2>🔴 Bug: <code>successRate</code> is wrong — always returns <code>1.0</code> (or <code>null</code>)</h2>
+<p>Two compounding mistakes in the query/logic:</p>
+<pre><code class="language-ts">const result = await db.execute({
+  sql: `SELECT COUNT(*) AS n FROM deliveries
+        WHERE status IN ('delivered','failed','canceled') AND updated_at &gt;= ?`,  // only selects `n`
+  args: [window],
+});
+const total = Number(result.rows[0]?.n ?? 0);
+const failed = Number(result.rows[0]?.failed ?? 0);  // ← no `failed` column in the query → always 0
+if (total + failed === 0) return null;
+return total / (total + failed);                      // ← total / (total + 0) === 1.0
+</code></pre>
+<ol>
+<li><strong><code>failed</code> is read from a column that doesn't exist</strong> (<code>AS n</code> is the only projection), so it's always <code>0</code>.</li>
+<li><strong><code>canceled</code> is counted in <code>total</code></strong>, but the design says success rate is <code>delivered ÷ (delivered + failed)</code> — canceled must be excluded (nothing failed).</li>
+</ol>
+<p>Net: whenever ≥1 terminal delivery exists, it returns <code>total/total = 1.0</code>; otherwise <code>null</code>. The metric is meaningless. My runtime check with 1 delivered / 1 failed / 1 canceled returned <code>1</code> (should be <code>0.5</code>).</p>
+<p><strong>Fix</strong> — count the two states separately and exclude canceled:</p>
+<pre><code class="language-ts">export async function successRate(windowMs = DEFAULT_WINDOW_MS): Promise&lt;number | null&gt; {
+  const window = new Date(Date.now() - windowMs).toISOString();
+  const result = await db.execute({
+    sql: `SELECT
+        SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS delivered,
+        SUM(CASE WHEN status = 'failed'    THEN 1 ELSE 0 END) AS failed
+      FROM deliveries
+      WHERE status IN ('delivered','failed') AND updated_at &gt;= ?`,
+    args: [window],
+  });
+  const delivered = Number(result.rows[0]?.delivered ?? 0);
+  const failed = Number(result.rows[0]?.failed ?? 0);
+  if (delivered + failed === 0) return null;
+  return delivered / (delivered + failed);
+}
+</code></pre>
+<p><code>recentThroughput</code> is correct (terminal deliveries in-window, <code>updated_at</code> anchor — good choice).</p>
+<h2>🟡 Two metrics were dropped, not implemented</h2>
+<p><code>attemptLatencyPercentiles</code> (p50/p95) and <code>attemptsToSuccess</code> are <strong>deleted</strong> — removed from <code>metrics.ts</code>, <code>StatusSnapshot</code>, the CLI, and the smoke test. That's done cleanly and consistently (no dangling refs in the code), so it's not broken — but:</p>
+<ul>
+<li>It's a <strong>scope cut from PLAN step 5</strong>, which listed "latency p50/p95" and "retry health (attempts-to-success)." Those are some of the more impressive observability bits for the README/rubric (especially latency percentiles, which you'd already invested in storing <code>duration_ms</code> for in Q7).</li>
+<li>The four <code>test.todo</code> lines still name <strong>"attempt latency p50/p95"</strong> and <strong>"attemptsToSuccess distribution"</strong> — now referencing metrics that no longer exist. Stale/misleading.</li>
+</ul>
+<p>So: was dropping those two intentional? Two clean paths:</p>
+<ul>
+<li><strong>Keep them cut</strong> — then remove the two stale <code>test.todo</code> lines and update PLAN step 5 to note latency/attempts-to-success are descoped (one line), so docs match code.</li>
+<li><strong>Re-add them</strong> — <code>attemptLatencyPercentiles</code> is the higher-value one and you already store <code>duration_ms</code>; the only real decision is small-N p95 behavior (e.g. <code>N&lt;2 → p95 = max</code>). I can implement both correctly.</li>
+</ul>
+<h2>Want me to:</h2>
+<ol>
+<li>Apply the <code>successRate</code> fix (and add a real assertion replacing its <code>test.todo</code>), and</li>
+<li>either (a) re-implement latency p50/p95 + attempts-to-success, or (b) remove the stale todos + note the descope in PLAN?</li>
+</ol>
+<p>Tell me 2a or 2b and I'll do it with the <code>successRate</code> fix in one pass.</p></div></div></div>
+<div class="message user" id="msg-2026-06-18T01-33-11-547Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-18T01-33-11-547Z" class="timestamp-link"><time datetime="2026-06-18T01:33:11.547Z" data-timestamp="2026-06-18T01:33:11.547Z">2026-06-18T01:33:11.547Z</time></a></div><div class="message-content">
+<div class="user-content"><p>I decided to cut those for time, it's fine to leave them out. maybe mention that in the plans somehwere?</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-34-17-660Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-34-17-660Z" class="timestamp-link"><time datetime="2026-06-18T01:34:17.660Z" data-timestamp="2026-06-18T01:34:17.660Z">2026-06-18T01:34:17.660Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-34-18-597Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-34-18-597Z" class="timestamp-link"><time datetime="2026-06-18T01:34:18.597Z" data-timestamp="2026-06-18T01:34:18.597Z">2026-06-18T01:34:18.597Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Got it — keeping them cut, with a note in the plan. I'll also fix the <code>successRate</code> bug (it's a metric you're keeping, and it's currently always <code>1.0</code>). Let me make three edits: the fix, the plan note, and tidy the stale test todos.</p>
+<p>First the <code>successRate</code> fix:</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-34-20-029Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-34-20-029Z" class="timestamp-link"><time datetime="2026-06-18T01:34:20.029Z" data-timestamp="2026-06-18T01:34:20.029Z">2026-06-18T01:34:20.029Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01DC1fEHp6PZfyxftc3tMxvi"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/nbbaier/Code/droplet-take-home/src/store/metrics.ts&#34;,
+  &#34;offset&#34;: 99,
+  &#34;limit&#34;: 22
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-34-20-105Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-34-20-105Z" class="timestamp-link"><time datetime="2026-06-18T01:34:20.105Z" data-timestamp="2026-06-18T01:34:20.105Z">2026-06-18T01:34:20.105Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>99		});
+100		return Number(result.rows[0]?.n ?? 0);
+101	}
+102	
+103	/**
+104	 * Success rate over the window: delivered ÷ (delivered + failed).
+105	 */
+106	export async function successRate(
+107		windowMs = DEFAULT_WINDOW_MS,
+108	): Promise&lt;number | null&gt; {
+109		const window = new Date(Date.now() - windowMs).toISOString();
+110		const result = await db.execute({
+111			sql: `SELECT
+112	         SUM(CASE WHEN status = &#x27;delivered&#x27; THEN 1 ELSE 0 END) AS delivered,
+113	         SUM(CASE WHEN status = &#x27;failed&#x27;    THEN 1 ELSE 0 END) AS failed
+114	       FROM deliveries
+115	       WHERE status IN (&#x27;delivered&#x27;,&#x27;failed&#x27;) AND updated_at &gt;= ?`,
+116			args: [window],
+117		});
+118		const delivered = Number(result.rows[0]?.delivered ?? 0);
+119		const failed = Number(result.rows[0]?.failed ?? 0);
+120		if (delivered + failed === 0) return null;</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-34-30-251Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-34-30-251Z" class="timestamp-link"><time datetime="2026-06-18T01:34:30.251Z" data-timestamp="2026-06-18T01:34:30.251Z">2026-06-18T01:34:30.251Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-34-30-918Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-34-30-918Z" class="timestamp-link"><time datetime="2026-06-18T01:34:30.918Z" data-timestamp="2026-06-18T01:34:30.918Z">2026-06-18T01:34:30.918Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01LBNZXXU6HprBj981Bn9KwC"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/nbbaier/Code/droplet-take-home/src/store/metrics.ts&#34;,
+  &#34;offset&#34;: 117,
+  &#34;limit&#34;: 10
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-34-30-990Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-34-30-990Z" class="timestamp-link"><time datetime="2026-06-18T01:34:30.990Z" data-timestamp="2026-06-18T01:34:30.990Z">2026-06-18T01:34:30.990Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>117		});
+118		const delivered = Number(result.rows[0]?.delivered ?? 0);
+119		const failed = Number(result.rows[0]?.failed ?? 0);
+120		if (delivered + failed === 0) return null;
+121		return delivered / (delivered + failed);
+122	}
+123	
+124	/**
+125	 * Assemble the full StatusSnapshot from the simple aggregations plus the stubbed
+126	 * windowed metrics. Always returns a complete shape so the endpoint is 200/demoable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-34-37-521Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-34-37-521Z" class="timestamp-link"><time datetime="2026-06-18T01:34:37.521Z" data-timestamp="2026-06-18T01:34:37.521Z">2026-06-18T01:34:37.521Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-34-38-401Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-34-38-401Z" class="timestamp-link"><time datetime="2026-06-18T01:34:38.401Z" data-timestamp="2026-06-18T01:34:38.401Z">2026-06-18T01:34:38.401Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>The file on disk already has the corrected <code>successRate</code> (SUM CASE, excludes canceled) — looks like you fixed it while I was reviewing; my earlier diff/runtime check was against the older state. Let me re-verify it's actually correct now, then handle the plan note:</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-34-43-665Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-34-43-665Z" class="timestamp-link"><time datetime="2026-06-18T01:34:43.665Z" data-timestamp="2026-06-18T01:34:43.665Z">2026-06-18T01:34:43.665Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01GF2aL89gMWgST3gaKaEMs9">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Confirm successRate now correct</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">PORT=3995 DATABASE_URL=&#34;file:./tmp-sr2.db&#34; bun -e &#39;
+import { migrate } from &#34;./src/db/migrate&#34;;
+import { db } from &#34;./src/db/client&#34;;
+import { successRate, recentThroughput } from &#34;./src/store/metrics&#34;;
+await migrate();
+const now = new Date().toISOString();
+await db.execute({ sql:`INSERT INTO endpoints (id,url,secret,event_types,state,created_at,updated_at) VALUES (?,?,?,?,?,?,?)`, args:[&#34;ep_x&#34;,&#34;http://x&#34;,&#34;s&#34;,&#34;[\&#34;*\&#34;]&#34;,&#34;active&#34;,now,now]});
+await db.execute({ sql:`INSERT INTO events (id,type,data,created_at) VALUES (?,?,?,?)`, args:[&#34;evt_x&#34;,&#34;order.created&#34;,&#34;{}&#34;,now]});
+for (const [id,st] of [[&#34;d1&#34;,&#34;delivered&#34;],[&#34;d2&#34;,&#34;failed&#34;],[&#34;d3&#34;,&#34;canceled&#34;]]) {
+  await db.execute({ sql:`INSERT INTO deliveries (id,event_id,endpoint_id,status,attempt_count,created_at,updated_at) VALUES (?,?,?,?,?,?,?)`, args:[id,&#34;evt_x&#34;,&#34;ep_x&#34;,st,1,now,now]});
+}
+console.log(&#34;successRate =&#34;, await successRate(), &#34;(want 0.5)&#34;);
+console.log(&#34;throughput =&#34;, await recentThroughput(), &#34;(want 3: all terminal in window)&#34;);
+&#39; 2&gt;&amp;1
+rm -f tmp-sr2.db*</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-34-48-482Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-34-48-482Z" class="timestamp-link"><time datetime="2026-06-18T01:34:48.482Z" data-timestamp="2026-06-18T01:34:48.482Z">2026-06-18T01:34:48.482Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>successRate = 0.5 (want 0.5)
+throughput = 3 (want 3: all terminal in window)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-34-55-033Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-34-55-033Z" class="timestamp-link"><time datetime="2026-06-18T01:34:55.033Z" data-timestamp="2026-06-18T01:34:55.033Z">2026-06-18T01:34:55.033Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-34-56-439Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-34-56-439Z" class="timestamp-link"><time datetime="2026-06-18T01:34:56.439Z" data-timestamp="2026-06-18T01:34:56.439Z">2026-06-18T01:34:56.439Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Both correct now (<code>successRate = 0.5</code>, <code>throughput = 3</code>). The bug's resolved. Now the two cleanups: remove the stale <code>test.todo</code>s that name the cut metrics, and note the descope in PLAN.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-34-57-378Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-34-57-378Z" class="timestamp-link"><time datetime="2026-06-18T01:34:57.378Z" data-timestamp="2026-06-18T01:34:57.378Z">2026-06-18T01:34:57.378Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_0126MgfLypnpYCbMrHPu7JTF"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/nbbaier/Code/droplet-take-home/test/scenarios.test.ts&#34;,
+  &#34;offset&#34;: 325,
+  &#34;limit&#34;: 30
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-34-57-465Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-34-57-465Z" class="timestamp-link"><time datetime="2026-06-18T01:34:57.465Z" data-timestamp="2026-06-18T01:34:57.465Z">2026-06-18T01:34:57.465Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>325			// Drive a delivery through so the simple counts are non-trivial.
+326			const { endpoint } = await createSink(daemon.baseUrl, {
+327				behavior: &quot;always-200&quot;,
+328			});
+329			await emitEvent(daemon.baseUrl, {
+330				type: &quot;order.created&quot;,
+331				data: { orderId: &quot;ord_status&quot; },
+332			});
+333			await waitForSettled(daemon.baseUrl, {
+334				endpointId: endpoint.id,
+335				expectedCount: 1,
+336			});
+337	
+338			const res = await fetch(`${daemon.baseUrl}/status`);
+339			expect(res.status).toBe(200);
+340			const snapshot = (await res.json()) as StatusSnapshot;
+341	
+342			// Simple aggregations (implemented) — sane, non-negative, internally consistent.
+343			expect(typeof snapshot.generatedAt).toBe(&quot;string&quot;);
+344			const d = snapshot.deliveries;
+345			expect(d.delivered).toBeGreaterThanOrEqual(1);
+346			expect(d.total).toBe(
+347				d.pending + d.processing + d.delivered + d.failed + d.canceled,
+348			);
+349			expect(snapshot.endpoints.total).toBeGreaterThanOrEqual(1);
+350			expect(snapshot.events).toBeGreaterThanOrEqual(1);
+351			expect(snapshot.inBackoff).toBeGreaterThanOrEqual(0);
+352	
+353			// Windowed metrics exist in the shape even while stubbed.
+354			expect(snapshot.windowed).toBeDefined();</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-01-699Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-01-699Z" class="timestamp-link"><time datetime="2026-06-18T01:35:01.699Z" data-timestamp="2026-06-18T01:35:01.699Z">2026-06-18T01:35:01.699Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01Q33eRsZhgn32JPzeuNw46y"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/nbbaier/Code/droplet-take-home/test/scenarios.test.ts&#34;,
+  &#34;offset&#34;: 353,
+  &#34;limit&#34;: 12
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-35-01-839Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-35-01-839Z" class="timestamp-link"><time datetime="2026-06-18T01:35:01.839Z" data-timestamp="2026-06-18T01:35:01.839Z">2026-06-18T01:35:01.839Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>353			// Windowed metrics exist in the shape even while stubbed.
+354			expect(snapshot.windowed).toBeDefined();
+355		});
+356	
+357		test(&quot;windowed throughput counts terminal deliveries in the window&quot;, async () =&gt; {
+358			const deliveredSink = await createSink(daemon.baseUrl, {
+359				behavior: &quot;always-200&quot;,
+360			});
+361			const failedSink = await createSink(daemon.baseUrl, {
+362				behavior: &quot;always-500&quot;,
+363			});
+364			const canceledSink = await createSink(daemon.baseUrl, {</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-14-286Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-14-286Z" class="timestamp-link"><time datetime="2026-06-18T01:35:14.286Z" data-timestamp="2026-06-18T01:35:14.286Z">2026-06-18T01:35:14.286Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-15-266Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-15-266Z" class="timestamp-link"><time datetime="2026-06-18T01:35:15.266Z" data-timestamp="2026-06-18T01:35:15.266Z">2026-06-18T01:35:15.266Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>The working tree has moved past my earlier diff — you've implemented real tests too. Let me read the current status block in full to see what's actually there now:</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-15-714Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-15-714Z" class="timestamp-link"><time datetime="2026-06-18T01:35:15.714Z" data-timestamp="2026-06-18T01:35:15.714Z">2026-06-18T01:35:15.714Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01YFGhy1E6QRjutNYWcgqsZj"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/nbbaier/Code/droplet-take-home/test/scenarios.test.ts&#34;,
+  &#34;offset&#34;: 355,
+  &#34;limit&#34;: 80
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-35-15-776Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-35-15-776Z" class="timestamp-link"><time datetime="2026-06-18T01:35:15.776Z" data-timestamp="2026-06-18T01:35:15.776Z">2026-06-18T01:35:15.776Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>355		});
+356	
+357		test(&quot;windowed throughput counts terminal deliveries in the window&quot;, async () =&gt; {
+358			const deliveredSink = await createSink(daemon.baseUrl, {
+359				behavior: &quot;always-200&quot;,
+360			});
+361			const failedSink = await createSink(daemon.baseUrl, {
+362				behavior: &quot;always-500&quot;,
+363			});
+364			const canceledSink = await createSink(daemon.baseUrl, {
+365				behavior: &quot;slow&quot;,
+366			});
+367	
+368			await emitEvent(daemon.baseUrl, {
+369				type: &quot;order.created&quot;,
+370				data: { orderId: &quot;ord_throughput_delivered&quot; },
+371			});
+372			await waitForSettled(daemon.baseUrl, {
+373				endpointId: deliveredSink.endpoint.id,
+374				expectedCount: 1,
+375			});
+376			await waitForSettled(daemon.baseUrl, {
+377				endpointId: failedSink.endpoint.id,
+378				expectedCount: 1,
+379			});
+380	
+381			await emitEvent(daemon.baseUrl, {
+382				type: &quot;order.created&quot;,
+383				data: { orderId: &quot;ord_throughput_canceled&quot; },
+384			});
+385			const deleteRes = await fetch(
+386				`${daemon.baseUrl}/endpoints/${canceledSink.endpoint.id}`,
+387				{ method: &quot;DELETE&quot; },
+388			);
+389			expect(deleteRes.status).toBe(204);
+390			await waitForSettled(daemon.baseUrl, {
+391				endpointId: canceledSink.endpoint.id,
+392				expectedCount: 2,
+393			});
+394	
+395			const snapshot = await statusSnapshot();
+396			const windowStart = Date.now() - snapshot.windowMs;
+397			const terminalDeliveries = (await listDeliveries(daemon.baseUrl)).filter(
+398				(delivery) =&gt;
+399					[&quot;delivered&quot;, &quot;failed&quot;, &quot;canceled&quot;].includes(delivery.status) &amp;&amp;
+400					Date.parse(delivery.updatedAt) &gt;= windowStart,
+401			);
+402	
+403			expect(snapshot.windowed.throughput).toBe(terminalDeliveries.length);
+404			expect(snapshot.windowed.throughput).toBeGreaterThanOrEqual(3);
+405		});
+406	
+407		test(&quot;successRate = delivered ÷ (delivered + failed) over the window&quot;, async () =&gt; {
+408			const deliveredSink = await createSink(daemon.baseUrl, {
+409				behavior: &quot;always-200&quot;,
+410			});
+411			const failedSink = await createSink(daemon.baseUrl, {
+412				behavior: &quot;always-500&quot;,
+413			});
+414	
+415			await emitEvent(daemon.baseUrl, {
+416				type: &quot;payment.succeeded&quot;,
+417				data: { paymentId: &quot;pay_rate_delivered&quot; },
+418			});
+419			await waitForSettled(daemon.baseUrl, {
+420				endpointId: deliveredSink.endpoint.id,
+421				expectedCount: 1,
+422			});
+423			await waitForSettled(daemon.baseUrl, {
+424				endpointId: failedSink.endpoint.id,
+425				expectedCount: 1,
+426			});
+427	
+428			const snapshot = await statusSnapshot();
+429			const windowStart = Date.now() - snapshot.windowMs;
+430			const deliveries = (await listDeliveries(daemon.baseUrl)).filter(
+431				(delivery) =&gt; Date.parse(delivery.updatedAt) &gt;= windowStart,
+432			);
+433			const delivered = deliveries.filter(
+434				(delivery) =&gt; delivery.status === &quot;delivered&quot;,</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-21-937Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-21-937Z" class="timestamp-link"><time datetime="2026-06-18T01:35:21.937Z" data-timestamp="2026-06-18T01:35:21.937Z">2026-06-18T01:35:21.937Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-23-461Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-23-461Z" class="timestamp-link"><time datetime="2026-06-18T01:35:23.461Z" data-timestamp="2026-06-18T01:35:23.461Z">2026-06-18T01:35:23.461Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01G2fPED7EPChv7eVEDx8JA5"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/nbbaier/Code/droplet-take-home/test/scenarios.test.ts&#34;,
+  &#34;offset&#34;: 434,
+  &#34;limit&#34;: 40
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-35-23-531Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-35-23-531Z" class="timestamp-link"><time datetime="2026-06-18T01:35:23.531Z" data-timestamp="2026-06-18T01:35:23.531Z">2026-06-18T01:35:23.531Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>434				(delivery) =&gt; delivery.status === &quot;delivered&quot;,
+435			).length;
+436			const failed = deliveries.filter(
+437				(delivery) =&gt; delivery.status === &quot;failed&quot;,
+438			).length;
+439			const expected =
+440				delivered + failed === 0 ? null : delivered / (delivered + failed);
+441	
+442			expect(snapshot.windowed.successRate).toBe(expected);
+443			expect(snapshot.windowed.successRate).not.toBeNull();
+444		});
+445	});
+446	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-33-934Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-33-934Z" class="timestamp-link"><time datetime="2026-06-18T01:35:33.934Z" data-timestamp="2026-06-18T01:35:33.934Z">2026-06-18T01:35:33.934Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-34-872Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-34-872Z" class="timestamp-link"><time datetime="2026-06-18T01:35:34.872Z" data-timestamp="2026-06-18T01:35:34.872Z">2026-06-18T01:35:34.872Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>The tests are thorough — both recompute the expected value from <code>listDeliveries</code> so they're robust against the shared daemon, and there are no stale todos for the cut metrics. Let me confirm green, then add the plan note (your actual ask):</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-35-839Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-35-839Z" class="timestamp-link"><time datetime="2026-06-18T01:35:35.839Z" data-timestamp="2026-06-18T01:35:35.839Z">2026-06-18T01:35:35.839Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_013gnMgc1aeYoTC4n6W5krG5">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Typecheck and run full suite</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">bunx tsc --noEmit &amp;&amp; echo &#34;tsc OK&#34; &amp;&amp; bun test 2&gt;&amp;1 | tail -6</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-35-38-196Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-35-38-196Z" class="timestamp-link"><time datetime="2026-06-18T01:35:38.196Z" data-timestamp="2026-06-18T01:35:38.196Z">2026-06-18T01:35:38.196Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>tsc OK
+bun test v1.3.13 (bf2e2cec)
+
+ 10 pass
+ 0 fail
+ 61 expect() calls
+Ran 10 tests across 1 file. [1.70s]</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-45-518Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-45-518Z" class="timestamp-link"><time datetime="2026-06-18T01:35:45.518Z" data-timestamp="2026-06-18T01:35:45.518Z">2026-06-18T01:35:45.518Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-46-601Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-46-601Z" class="timestamp-link"><time datetime="2026-06-18T01:35:46.601Z" data-timestamp="2026-06-18T01:35:46.601Z">2026-06-18T01:35:46.601Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>All green — 10 pass, 0 fail. Now the plan note. Let me update PLAN step 5 to record the descope and check off what's done:</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-46-985Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-46-985Z" class="timestamp-link"><time datetime="2026-06-18T01:35:46.985Z" data-timestamp="2026-06-18T01:35:46.985Z">2026-06-18T01:35:46.985Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01Mf22JiZwf2vNVivs618C8u"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/nbbaier/Code/droplet-take-home/PLAN.md&#34;,
+  &#34;offset&#34;: 88,
+  &#34;limit&#34;: 20
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-35-47-037Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-35-47-037Z" class="timestamp-link"><time datetime="2026-06-18T01:35:47.037Z" data-timestamp="2026-06-18T01:35:47.037Z">2026-06-18T01:35:47.037Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>88	### 5. Observability
+89	
+90	- [~] Status/metrics endpoint (computed on-read): queue depth by status,
+91	      throughput (last 1/5 min), success rate, retry health (in-backoff count +
+92	      attempts-to-success), latency p50/p95, endpoint counts (incl. disabled).
+93	      (`GET /status` + simple aggregations done; windowed/statistical metrics
+94	      stubbed with TODOs in `src/store/metrics.ts` — endpoint returns 200.)
+95	- [~] `webhooks status` CLI command rendering it. (Fetch + basic render done;
+96	      polished formatting / `--watch` left as a TODO in `src/cli/index.ts`.)
+97	- [x] JSON-lines lifecycle logs: `event.ingested`, `delivery.created`,
+98	      `attempt.started/succeeded/failed`, `delivery.exhausted`, `endpoint.disabled`,
+99	      correlatable by delivery_id/event_id. (`src/log.ts` + call sites.)
+100	
+101	### Edge-case behaviors (fold into steps above)
+102	
+103	- [~] Endpoint soft-delete → in-flight Deliveries → `canceled` (not `failed`).
+104	  (Worker cancels deliveries for deleted/disabled Endpoints; store fn exists.
+105	  Still needs the `DELETE /endpoints/:id` route + proactive cancel.)
+106	- [x] 410 → Endpoint `disabled`; queued Deliveries `canceled`; no new fan-out.
+107	- [x] Routing frozen at fan-out (subscription changes don&#x27;t affect existing Deliveries).</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-54-387Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-54-387Z" class="timestamp-link"><time datetime="2026-06-18T01:35:54.387Z" data-timestamp="2026-06-18T01:35:54.387Z">2026-06-18T01:35:54.387Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-35-59-656Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-35-59-656Z" class="timestamp-link"><time datetime="2026-06-18T01:35:59.656Z" data-timestamp="2026-06-18T01:35:59.656Z">2026-06-18T01:35:59.656Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01Jr1FBgn3B6Qd2Y7fhRJcm6">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">PLAN.md</span></div>
+<div class="file-tool-fullpath">/Users/nbbaier/Code/droplet-take-home/PLAN.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">- [~] Status/metrics endpoint (computed on-read): queue depth by status,
+      throughput (last 1/5 min), success rate, retry health (in-backoff count +
+      attempts-to-success), latency p50/p95, endpoint counts (incl. disabled).
+      (`GET /status` + simple aggregations done; windowed/statistical metrics
+      stubbed with TODOs in `src/store/metrics.ts` — endpoint returns 200.)
+- [~] `webhooks status` CLI command rendering it. (Fetch + basic render done;
+      polished formatting / `--watch` left as a TODO in `src/cli/index.ts`.)</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">- [x] Status/metrics endpoint (computed on-read): `GET /status` with queue depth
+      by status, endpoint counts (incl. disabled/deleted), in-backoff count, event
+      count, windowed throughput, and success rate.
+      **Descoped for time:** latency p50/p95 and attempts-to-success (retry-health
+      distribution) were cut — the rest of the snapshot covers the observability
+      requirement. Could be added later from the stored `attempts.duration_ms` /
+      `attempt_count` columns (the data is there).
+- [~] `webhooks status` CLI command rendering it. (Fetch + basic render done;
+      polished formatting / `--watch` left as a TODO in `src/cli/index.ts`.)</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-35-59-955Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-35-59-955Z" class="timestamp-link"><time datetime="2026-06-18T01:35:59.955Z" data-timestamp="2026-06-18T01:35:59.955Z">2026-06-18T01:35:59.955Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/nbbaier/Code/droplet-take-home/PLAN.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-36-07-883Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-36-07-883Z" class="timestamp-link"><time datetime="2026-06-18T01:36:07.883Z" data-timestamp="2026-06-18T01:36:07.883Z">2026-06-18T01:36:07.883Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01ChVB83uNjtiktJHQnenPDk">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">PLAN.md</span></div>
+<div class="file-tool-fullpath">/Users/nbbaier/Code/droplet-take-home/PLAN.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">- [~] Endpoint soft-delete → in-flight Deliveries → `canceled` (not `failed`).
+  (Worker cancels deliveries for deleted/disabled Endpoints; store fn exists.
+  Still needs the `DELETE /endpoints/:id` route + proactive cancel.)</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">- [x] Endpoint soft-delete → in-flight Deliveries → `canceled` (not `failed`).
+  (`DELETE /endpoints/:id` soft-deletes + cancels queued Deliveries; terminal
+  writes guard on `status=&#39;processing&#39;` so a cancel isn&#39;t overwritten.)</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-36-08-055Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-36-08-055Z" class="timestamp-link"><time datetime="2026-06-18T01:36:08.055Z" data-timestamp="2026-06-18T01:36:08.055Z">2026-06-18T01:36:08.055Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/nbbaier/Code/droplet-take-home/PLAN.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-36-15-572Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-36-15-572Z" class="timestamp-link"><time datetime="2026-06-18T01:36:15.572Z" data-timestamp="2026-06-18T01:36:15.572Z">2026-06-18T01:36:15.572Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-36-15-970Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-36-15-970Z" class="timestamp-link"><time datetime="2026-06-18T01:36:15.970Z" data-timestamp="2026-06-18T01:36:15.970Z">2026-06-18T01:36:15.970Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Let me also surface the descope in the Future-work list so it lands in the README:</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-36-16-589Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-36-16-589Z" class="timestamp-link"><time datetime="2026-06-18T01:36:16.589Z" data-timestamp="2026-06-18T01:36:16.589Z">2026-06-18T01:36:16.589Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01Pwma8gy3nLkAno31L3NzCT"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/nbbaier/Code/droplet-take-home/PLAN.md&#34;,
+  &#34;offset&#34;: 118,
+  &#34;limit&#34;: 12
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-36-16-698Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-36-16-698Z" class="timestamp-link"><time datetime="2026-06-18T01:36:16.698Z" data-timestamp="2026-06-18T01:36:16.698Z">2026-06-18T01:36:16.698Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>118	- [ ] `webhooks status --watch` live view.
+119	- [ ] Manual re-trigger of a `failed` Delivery.
+120	
+121	## Future work (name in README, don&#x27;t build)
+122	
+123	- Idempotency key on ingest.
+124	- Inbound API auth / multi-tenancy (currently open by design).
+125	- Dynamic/registrable event types.
+126	- Separate worker entrypoint / real broker for horizontal scaling.
+127	- 410 auto-disable already done; broader auto-disable on repeated failures.
+128	
+129	## README must include</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-36-23-972Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-36-23-972Z" class="timestamp-link"><time datetime="2026-06-18T01:36:23.972Z" data-timestamp="2026-06-18T01:36:23.972Z">2026-06-18T01:36:23.972Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01Ww6f3DQhWFNgUTN1iYFrvv">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">PLAN.md</span></div>
+<div class="file-tool-fullpath">/Users/nbbaier/Code/droplet-take-home/PLAN.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">- Separate worker entrypoint / real broker for horizontal scaling.
+- 410 auto-disable already done; broader auto-disable on repeated failures.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">- Separate worker entrypoint / real broker for horizontal scaling.
+- 410 auto-disable already done; broader auto-disable on repeated failures.
+- Latency p50/p95 + attempts-to-success metrics on `/status` (descoped for time;
+  `attempts.duration_ms` / `attempt_count` are already stored).</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-36-24-179Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-36-24-179Z" class="timestamp-link"><time datetime="2026-06-18T01:36:24.179Z" data-timestamp="2026-06-18T01:36:24.179Z">2026-06-18T01:36:24.179Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/nbbaier/Code/droplet-take-home/PLAN.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-36-36-779Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-36-36-779Z" class="timestamp-link"><time datetime="2026-06-18T01:36:36.779Z" data-timestamp="2026-06-18T01:36:36.779Z">2026-06-18T01:36:36.779Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-36-45-066Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-36-45-066Z" class="timestamp-link"><time datetime="2026-06-18T01:36:45.066Z" data-timestamp="2026-06-18T01:36:45.066Z">2026-06-18T01:36:45.066Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>All set. Verdict on the step-5 metrics work:</p>
+<h2>Review: ✅ clean</h2>
+<ul>
+<li><strong><code>successRate</code></strong> — the bug I flagged (always <code>1.0</code>) is already fixed in your working tree; I re-verified at runtime: 1 delivered / 1 failed / 1 canceled → <strong><code>0.5</code></strong> (correctly excludes canceled). </li>
+<li><strong><code>recentThroughput</code></strong> — correct (3 terminal in-window).</li>
+<li><strong>Tests</strong> — both new tests recompute the expected value from <code>listDeliveries</code> and assert the snapshot matches, so they're robust against the shared-daemon DB rather than hard-coding counts. Nicely done. No stale <code>test.todo</code>s left for the cut metrics.</li>
+<li><code>tsc</code> clean, <strong>10 pass / 0 fail</strong>.</li>
+</ul>
+<h2>What I changed (PLAN.md only — no code touched)</h2>
+<ul>
+<li><strong>Step 5 status line → <code>[x]</code></strong> with an explicit descope note: latency p50/p95 and attempts-to-success cut for time, and that the data (<code>attempts.duration_ms</code>, <code>attempt_count</code>) is already stored if you ever re-add them.</li>
+<li><strong>Added the descope to the Future-work list</strong> so it surfaces in the README.</li>
+<li><strong>Soft-delete edge case → <code>[x]</code></strong> (the <code>DELETE /endpoints/:id</code> route + the <code>status='processing'</code> guard landed since I last touched the plan).</li>
+</ul>
+<p>The PLAN.md edits are uncommitted alongside your step-5 implementation — fold them into your commit.</p>
+<p>That's the <strong>entire spine done</strong> (steps 1–5). What's left is non-spine: the README (rubric-heavy — how-to-run, design decisions, the signature contract, config table, LLM transcripts, the ASCII pipe), and optionally the CLI polish / <code>--watch</code> stretch. Want to tackle the README next? That one I'd suggest we write together directly rather than hand off, since it's the narrative voice of your submission.</p></div></div></div>
+<div class="message user" id="msg-2026-06-18T01-37-06-482Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-18T01-37-06-482Z" class="timestamp-link"><time datetime="2026-06-18T01:37:06.482Z" data-timestamp="2026-06-18T01:37:06.482Z">2026-06-18T01:37:06.482Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Commit and then take stock of what there is to do - basically the CLI and the readme. I think I'd like you to implement the cli from a description I'll write in plans.</p></div></div></div>
+<div class="message user" id="msg-2026-06-18T01-37-57-283Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-18T01-37-57-283Z" class="timestamp-link"><time datetime="2026-06-18T01:37:57.283Z" data-timestamp="2026-06-18T01:37:57.283Z">2026-06-18T01:37:57.283Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Commit. Then I want to think about the minimal CLI polish we could do.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-38-02-609Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-38-02-609Z" class="timestamp-link"><time datetime="2026-06-18T01:38:02.609Z" data-timestamp="2026-06-18T01:38:02.609Z">2026-06-18T01:38:02.609Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_011U5rXaUfRvbrFQ4CRCxWKg">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Stage all step-5 metric work and plan updates</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">git add -A &amp;&amp; git status --short</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-38-02-708Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-38-02-708Z" class="timestamp-link"><time datetime="2026-06-18T01:38:02.708Z" data-timestamp="2026-06-18T01:38:02.708Z">2026-06-18T01:38:02.708Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>M  PLAN.md
+M  src/cli/index.ts
+M  src/harness/index.ts
+M  src/server.ts
+M  src/store/metrics.ts
+M  src/testing/bootstrap.ts
+M  src/types.ts
+M  test/scenarios.test.ts</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-38-11-073Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-38-11-073Z" class="timestamp-link"><time datetime="2026-06-18T01:38:11.073Z" data-timestamp="2026-06-18T01:38:11.073Z">2026-06-18T01:38:11.073Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01MnQpJmC7SfqKKhujqFG5tF">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Commit step-5 metric work</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">git commit -m &#34;$(cat &lt;&lt;&#39;EOF&#39;
+feat(observability): implement windowed metrics; descope latency/attempts
+
+- successRate: delivered ÷ (delivered + failed) over the window, excluding
+  canceled; null when no terminal deliveries.
+- recentThroughput: terminal deliveries within the window.
+- drop latency p50/p95 + attempts-to-success (descoped for time); remove from
+  StatusSnapshot, CLI, and tests.
+- add real /status tests (throughput + successRate) that recompute expected
+  values from the delivery list, robust against the shared test daemon.
+- PLAN: mark step 5 + soft-delete edge case done; note the descope.
+
+Co-Authored-By: Claude Opus 4.8 &lt;noreply@anthropic.com&gt;
+EOF
+)&#34; &amp;&amp; git log --oneline -1</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-38-11-187Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-38-11-187Z" class="timestamp-link"><time datetime="2026-06-18T01:38:11.187Z" data-timestamp="2026-06-18T01:38:11.187Z">2026-06-18T01:38:11.187Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><div class="commit-card"><span class="commit-card-hash">ccb030a</span> feat(observability): implement windowed metrics; descope latency/attempts</div><pre>8 files changed, 137 insertions(+), 86 deletions(-)
+ccb030a feat(observability): implement windowed metrics; descope latency/attempts</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-38-31-871Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-38-31-871Z" class="timestamp-link"><time datetime="2026-06-18T01:38:31.871Z" data-timestamp="2026-06-18T01:38:31.871Z">2026-06-18T01:38:31.871Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-38-44-529Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-38-44-529Z" class="timestamp-link"><time datetime="2026-06-18T01:38:44.529Z" data-timestamp="2026-06-18T01:38:44.529Z">2026-06-18T01:38:44.529Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Committed as <code>ccb030a</code> (8 files). Spine's fully landed.</p>
+<p>Now, CLI polish. Let me frame the options by effort, since "minimal" is the goal and this is where the dashboard's UX budget moved (so it's worth a <em>little</em> taste, not a rewrite).</p>
+<p>Here's the <strong>current</strong> output:</p>
+<pre><code>webhook-delivery status  (2026-06-18T01:05:45.593Z)
+
+Deliveries:
+  pending    0
+  processing 0
+  delivered  1
+  failed     0
+  ...
+In backoff: 0
+Events:     1
+</code></pre>
+<p>Functional, but it reads like a debug dump — no hierarchy, no at-a-glance health, numbers left-aligned and ragged.</p>
+<p><strong>Tier 1 — minimal, high taste-per-line (my recommendation).</strong> ~30–40 lines, no deps:
+- A <strong>one-line health header</strong> you can read in a glance.
+- <strong>Right-aligned numbers</strong> in fixed columns so they scan vertically.
+- <strong>Status dots / color</strong>, but <strong>TTY-aware</strong> (strip ANSI when piped/non-interactive — important so <code>webhooks status | grep</code> stays clean).</p>
+<p>Mockup:</p>
+<pre><code>webhook-delivery — healthy                       2026-06-18 01:05:45
+
+  ● 1 delivered   ◌ 0 pending   ◍ 0 in-flight   ✗ 0 failed   ⊘ 0 canceled
+  success rate 100%   throughput 1/5m
+
+Deliveries        Endpoints
+  delivered    1     active      1
+  pending      0     disabled    0
+  in-flight    0     deleted     0
+  failed       0     ─────────────
+  canceled     0     total       1
+  ───────────       
+  total        1     events      1   in-backoff 0
+</code></pre>
+<p><strong>Tier 2 — <code>--watch</code></strong> (the stretch goal): re-poll every Ns and redraw in place. ~20 more lines, but needs cursor/clear handling and Ctrl-C cleanup. This is the "demo money-shot" — watching <code>pending</code> drain and <code>failed</code> tick during a harness run.</p>
+<p>My take: <strong>do Tier 1 now</strong> — it's the biggest perceived-quality jump for the least code and risk, and it's genuinely "minimal." Add Tier 2 only if you want the live demo and have the time; it's where the fiddly terminal-control bugs live.</p>
+<p>Two things to decide:
+1. Tier 1 only, or Tier 1 + <code>--watch</code>?
+2. Color: yes (with TTY detection) or keep it monochrome (simplest, zero risk of escape-code mess in logs/CI)?</p></div></div></div>
+<div class="message user" id="msg-2026-06-18T01-39-26-524Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-18T01-39-26-524Z" class="timestamp-link"><time datetime="2026-06-18T01:39:26.524Z" data-timestamp="2026-06-18T01:39:26.524Z">2026-06-18T01:39:26.524Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Let's do tier 1. I was thinking that it would be nice to have the CLI commands for registering endpoints / emiting events but the harness seems reasonable for that here</p></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-013.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-009.html">9</a>
+<a href="page-010.html">10</a>
+<a href="page-011.html">11</a>
+<a href="page-012.html">12</a>
+<a href="page-013.html">13</a>
+<span class="current">14</span>
+<a href="page-015.html">15</a>
+<a href="page-015.html">Next &rarr;</a>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

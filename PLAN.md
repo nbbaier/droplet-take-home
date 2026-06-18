@@ -77,13 +77,13 @@ One central config so demo delays can be shrunk:
 
 ### 4. Harness + tests (the evidence)
 
-- [ ] Shared setup helpers: `registerEndpoint`, `createSink`, `emitEvent`,
+- [x] Shared setup helpers: `registerEndpoint`, `createSink`, `emitEvent`,
       `waitForSettled`.
-- [ ] Named scenarios (run + print timeline + status snapshot): `happy-path`,
+- [x] Named scenarios (run + print timeline + status snapshot): `happy-path`,
       `retry-recovery`, `permanent-failure`, `gone-disables`, `delete-cancels`,
       `signature-verified`, `routing`.
-- [ ] Harness entry: no arg → interactive menu; `bun run harness <name>` → run one.
-- [ ] `bun test` 1:1 with scenarios (shared setup; tests assert, scenarios print).
+- [x] Harness entry: no arg → interactive menu; `bun run harness <name>` → run one.
+- [x] `bun test` 1:1 with scenarios (shared setup; tests assert, scenarios print).
 
 ### 5. Observability
 
@@ -95,7 +95,7 @@ One central config so demo delays can be shrunk:
       requirement. Could be added later from the stored `attempts.duration_ms` /
       `attempt_count` columns (the data is there).
 - [~] `webhooks status` CLI command rendering it. (Fetch + basic render done;
-      polished formatting / `--watch` left as a TODO in `src/cli/index.ts`.)
+  polished formatting / `--watch` left as a TODO in `src/cli/index.ts`.)
 - [x] JSON-lines lifecycle logs: `event.ingested`, `delivery.created`,
       `attempt.started/succeeded/failed`, `delivery.exhausted`, `endpoint.disabled`,
       correlatable by delivery_id/event_id. (`src/log.ts` + call sites.)
@@ -103,8 +103,8 @@ One central config so demo delays can be shrunk:
 ### Edge-case behaviors (fold into steps above)
 
 - [x] Endpoint soft-delete → in-flight Deliveries → `canceled` (not `failed`).
-  (`DELETE /endpoints/:id` soft-deletes + cancels queued Deliveries; terminal
-  writes guard on `status='processing'` so a cancel isn't overwritten.)
+      (`DELETE /endpoints/:id` soft-deletes + cancels queued Deliveries; terminal
+      writes guard on `status='processing'` so a cancel isn't overwritten.)
 - [x] 410 → Endpoint `disabled`; queued Deliveries `canceled`; no new fan-out.
 - [x] Routing frozen at fan-out (subscription changes don't affect existing Deliveries).
 

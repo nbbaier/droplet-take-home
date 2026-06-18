@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 5</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 5/15</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-004.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<span class="current">5</span>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-009.html">9</a>
+<a href="page-010.html">10</a>
+<a href="page-011.html">11</a>
+<a href="page-012.html">12</a>
+<a href="page-013.html">13</a>
+<a href="page-014.html">14</a>
+<a href="page-015.html">15</a>
+<a href="page-006.html">Next &rarr;</a>
+</div>
+
+        
+<div class="message user" id="msg-2026-06-17T19-59-11-464Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-17T19-59-11-464Z" class="timestamp-link"><time datetime="2026-06-17T19:59:11.464Z" data-timestamp="2026-06-17T19:59:11.464Z">2026-06-17T19:59:11.464Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Yes</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-59-19-366Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-59-19-366Z" class="timestamp-link"><time datetime="2026-06-17T19:59:19.366Z" data-timestamp="2026-06-17T19:59:19.366Z">2026-06-17T19:59:19.366Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-59-19-555Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-59-19-555Z" class="timestamp-link"><time datetime="2026-06-17T19:59:19.555Z" data-timestamp="2026-06-17T19:59:19.555Z">2026-06-17T19:59:19.555Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>That's a real architectural decision a reviewer will question ("the assignment mentioned a dashboard — why a CLI?"), it's a genuine trade-off, and the CLI-over-API-not-DB constraint is non-obvious. Worth an ADR.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-59-29-360Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-59-29-360Z" class="timestamp-link"><time datetime="2026-06-17T19:59:29.360Z" data-timestamp="2026-06-17T19:59:29.360Z">2026-06-17T19:59:29.360Z</time></a></div><div class="message-content"><div class="file-tool write-tool" data-tool-id="toolu_01L1B1LbrvQT4ZKu263kciTU">
+<div class="file-tool-header write-header"><span class="file-tool-icon">📝</span> Write <span class="file-tool-path">0002-cli-over-http-api-no-dashboard.md</span></div>
+<div class="file-tool-fullpath">/Users/nbbaier/Code/droplet-take-home/docs/adr/0002-cli-over-http-api-no-dashboard.md</div>
+<div class="truncatable"><div class="truncatable-content"><pre class="file-content"># 2. CLI + harness over the HTTP API; no web dashboard
+
+Date: 2026-06-17
+
+## Status
+
+Accepted
+
+## Context
+
+The assignment requires a way to register endpoints, ingest events, a test
+harness, and observability. It explicitly allows the interface to be &#34;an HTTP API,
+a CLI harness, or some other interesting idea,&#34; and allows observability to be
+&#34;logs, metrics, status API, a dashboard, or something totally different.&#34;
+
+An initial plan included a Vite + shadcn/ui dashboard with tabs and action
+buttons. Within a 2–6 hour budget, a polished frontend is the highest
+effort-per-point item and the most likely to be left half-finished — which the
+rubric penalizes more than a deliberately narrower scope.
+
+## Decision
+
+Cut the web dashboard. Build:
+
+- **One daemon** (`bun run dev`): Hono serving the ingest API, sink routes, the
+  status/metrics API, and the in-process worker.
+- **A CLI** that is a *thin client over the HTTP API* — never touching SQLite
+  directly. Commands to add endpoints, create sinks, emit events, list
+  deliveries/attempts, and show status.
+- **A harness script** that drives the same HTTP API to run end-to-end scenarios
+  and print a report.
+- **Observability** = structured JSON logs from the daemon, a status/metrics JSON
+  endpoint, and a `status --watch` CLI view.
+
+The CLI talks to the API, not the database, so there is a single writer (the
+daemon owns the DB), and the CLI, harness, and any external consumer all exercise
+the same surface.
+
+## Consequences
+
+- Removes the largest time sink; effort concentrates on the delivery engine,
+  reliability, and tests — the heart of the assignment.
+- The &#34;where do you invest in UX polish?&#34; signal moves to the CLI and status
+  output, which must therefore be genuinely polished (e.g. a live `--watch` view),
+  not raw dumps.
+- No direct-DB CLI path avoids two writers to one SQLite file and split-brain.
+- **Future work:** the status/metrics API is UI-ready, so a dashboard could be
+  added later without changing the core.
+</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-17T19-59-29-553Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-17T19-59-29-553Z" class="timestamp-link"><time datetime="2026-06-17T19:59:29.553Z" data-timestamp="2026-06-17T19:59:29.553Z">2026-06-17T19:59:29.553Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>File created successfully at: /Users/nbbaier/Code/droplet-take-home/docs/adr/0002-cli-over-http-api-no-dashboard.md (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-59-32-679Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-59-32-679Z" class="timestamp-link"><time datetime="2026-06-17T19:59:32.679Z" data-timestamp="2026-06-17T19:59:32.679Z">2026-06-17T19:59:32.679Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T19-59-43-798Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T19-59-43-798Z" class="timestamp-link"><time datetime="2026-06-17T19:59:43.798Z" data-timestamp="2026-06-17T19:59:43.798Z">2026-06-17T19:59:43.798Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>ADR 0002 written.</p>
+<hr />
+<p><strong>Question 12 — Observability: what's actually in <code>status</code>/<code>metrics</code>, and what do the structured logs capture?</strong></p>
+<p>Now that the CLI status view <em>is</em> your observability story (no dashboard to lean on), let's define what it shows. Don't over-build here — pick the few numbers that tell the system's health at a glance.</p>
+<p><strong>(a) The <code>status</code>/<code>metrics</code> endpoint.</strong> My recommendation — a small, queryable JSON snapshot computed from the tables:
+- <strong>Queue depth</strong>: counts of deliveries by status (<code>pending</code>, <code>processing</code>, <code>delivered</code>, <code>failed</code>).
+- <strong>Throughput</strong>: deliveries completed in the last minute/5 min.
+- <strong>Success rate</strong>: delivered ÷ (delivered + failed) over a window.
+- <strong>Retry health</strong>: count currently in backoff, and a distribution of attempts-to-success.
+- <strong>Latency</strong>: p50/p95 of Attempt <code>duration_ms</code> (you're already storing it from Q7).
+- <strong>Endpoints</strong>: total, and how many are auto-disabled (from <code>410</code>).</p>
+<p><strong>(b) <code>webhooks status --watch</code></strong>: re-poll that endpoint on an interval and re-render — so you literally watch <code>pending</code> drain and <code>failed</code> tick up during a harness run. This is the demo money-shot.</p>
+<p><strong>(c) Structured logs.</strong> My rec: JSON lines, one per significant lifecycle event — <code>event.ingested</code>, <code>delivery.created</code>, <code>attempt.started/succeeded/failed</code>, <code>delivery.exhausted</code>, <code>endpoint.disabled</code> — each with the relevant IDs, status code, duration, and attempt number. Correlatable by <code>delivery_id</code>/<code>event_id</code>. This is cheap (a tiny logger) and it's what makes failures debuggable, which the assignment explicitly asks about ("what happens when things fail in weird ways").</p>
+<p>The taste decision: <strong>compute metrics on-read from the tables, don't maintain counters.</strong> At this scale a few <code>GROUP BY</code> queries are instant, and avoiding a parallel counter system means no drift and less code.</p>
+<p>Confirm: that metrics set (queue depth / throughput / success rate / retry health / latency / endpoints), computed on-read, plus JSON-lines lifecycle logs, plus <code>--watch</code>? Or do you want to trim the metrics list?</p></div></div></div>
+<div class="message user" id="msg-2026-06-17T20-01-26-918Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-17T20-01-26-918Z" class="timestamp-link"><time datetime="2026-06-17T20:01:26.918Z" data-timestamp="2026-06-17T20:01:26.918Z">2026-06-17T20:01:26.918Z</time></a></div><div class="message-content">
+<div class="user-content"><p>That's a good set of metrics.</p></div></div></div>
+<div class="message user" id="msg-2026-06-17T20-03-23-651Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-17T20-03-23-651Z" class="timestamp-link"><time datetime="2026-06-17T20:03:23.651Z" data-timestamp="2026-06-17T20:03:23.651Z">2026-06-17T20:03:23.651Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Yes, let's do (a)+(b), with that set of metrics. I don't know about (c) for this scope. I think either (a)+(b) or (a)+(c)</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T20-03-40-180Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T20-03-40-180Z" class="timestamp-link"><time datetime="2026-06-17T20:03:40.180Z" data-timestamp="2026-06-17T20:03:40.180Z">2026-06-17T20:03:40.180Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T20-03-47-926Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T20-03-47-926Z" class="timestamp-link"><time datetime="2026-06-17T20:03:47.926Z" data-timestamp="2026-06-17T20:03:47.926Z">2026-06-17T20:03:47.926Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>I'd take <strong>(a)+(c)</strong> — and here's the reasoning for picking logs over the live view:</p>
+<ul>
+<li><strong>(c) is a second, independent observability pillar; (b) is polish on top of (a).</strong> The <code>status</code> endpoint already gives you the glanceable health story — <code>--watch</code> just re-renders it on a timer. Useful, but it doesn't tell you anything <code>status</code> run twice doesn't. Logs tell you something the metrics <em>can't</em>: the per-Delivery story of <em>why</em> something failed.</li>
+<li><strong>The assignment lists "logs" first</strong> and explicitly asks "what happens when things fail in weird ways" — structured lifecycle logs are the direct answer to that prompt. Aggregate metrics show <em>that</em> failures happened; logs show <em>what</em> happened to a specific Delivery.</li>
+<li><strong>Logs pay for themselves while you build.</strong> You'll be debugging the worker, the retry classifier, the HMAC — having <code>attempt.failed {delivery_id, status_code, error}</code> lines from hour one makes that work faster. <code>--watch</code> only helps at demo time.</li>
+<li><strong>Both are cheap, but logs are cheaper to get right.</strong> A tiny JSON-lines logger called at lifecycle points is near-zero risk; <code>--watch</code> needs terminal redraw handling that can rabbit-hole on polish.</li>
+</ul>
+<p>So: <strong>(a)+(c)</strong> — metrics API + JSON-lines lifecycle logs — and keep <code>--watch</code> as a clearly-labeled stretch goal if you finish the spine early. That way your one-shot <code>webhooks status</code> still gives the visible health snapshot; you just don't commit time to the animated version.</p>
+<p>Good with (a)+(c), <code>--watch</code> as a stretch?</p></div></div></div>
+<div class="message user" id="msg-2026-06-17T20-04-03-662Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-17T20-04-03-662Z" class="timestamp-link"><time datetime="2026-06-17T20:04:03.662Z" data-timestamp="2026-06-17T20:04:03.662Z">2026-06-17T20:04:03.662Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Yes, lock in a+c</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T20-04-16-495Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T20-04-16-495Z" class="timestamp-link"><time datetime="2026-06-17T20:04:16.495Z" data-timestamp="2026-06-17T20:04:16.495Z">2026-06-17T20:04:16.495Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T20-04-26-750Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T20-04-26-750Z" class="timestamp-link"><time datetime="2026-06-17T20:04:26.750Z" data-timestamp="2026-06-17T20:04:26.750Z">2026-06-17T20:04:26.750Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Locked. We've covered the spine end to end. Let me close with the edge cases — the assignment explicitly rewards "what happens when things fail in weird ways," and these are cheap to decide now and awkward to retrofit.</p>
+<p><strong>Question 13 — Endpoint lifecycle vs. in-flight Deliveries. Three concrete scenarios:</strong></p>
+<p><strong>Scenario 1 — Endpoint deleted while it has pending/processing Deliveries.</strong>
+An operator removes an Endpoint, but 40 Deliveries to it are sitting <code>pending</code> or mid-retry. What happens to them?
+My rec: <strong>soft-delete the Endpoint</strong> (<code>deleted_at</code>), and the worker skips/cancels Deliveries whose Endpoint is deleted (mark them <code>canceled</code>, a distinct terminal state — not <code>failed</code>, since nothing failed). Soft-delete also keeps your historical Deliveries/Attempts referentially intact for the audit trail. Hard-delete would orphan rows and corrupt your metrics history.</p>
+<p><strong>Scenario 2 — Endpoint auto-disabled by <code>410</code> (from Q5) while Deliveries are queued.</strong>
+My rec: disabled is <em>not</em> deleted — existing Deliveries to it stop (mark <code>canceled</code> or hold), and no <em>new</em> Deliveries are created for it during fan-out. Distinguish <code>disabled</code> (system turned it off, reversible) from <code>deleted</code> (operator removed it).</p>
+<p><strong>Scenario 3 — Endpoint's <code>event_types</code> changes after Events were already queued for it.</strong>
+My rec: <strong>routing is decided at fan-out time, not delivery time.</strong> Once a Delivery exists, it delivers regardless of later subscription changes. Re-evaluating routing on every attempt would be surprising and racy. (This means: fan-out reads the subscription once, when the Event is ingested.)</p>
+<p>The through-line: <strong>Endpoints are soft-deleted, with <code>disabled</code> and <code>deleted</code> as distinct states, and routing is frozen at fan-out time.</strong> This adds one <code>canceled</code> terminal Delivery state and <code>deleted_at</code>/<code>disabled_at</code> columns on Endpoint.</p>
+<p>Confirm all three? Or do you want, e.g., hard-delete instead of soft-delete, or routing re-evaluated at delivery time?</p></div></div></div>
+<div class="message user" id="msg-2026-06-17T20-07-03-751Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-17T20-07-03-751Z" class="timestamp-link"><time datetime="2026-06-17T20:07:03.751Z" data-timestamp="2026-06-17T20:07:03.751Z">2026-06-17T20:07:03.751Z</time></a></div><div class="message-content">
+<div class="user-content"><p>I always go for soft delete where possible, so lock in soft delete. Lock in all three. I think there's a question here of how I show off those scenarios in the demo</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T20-07-10-509Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T20-07-10-509Z" class="timestamp-link"><time datetime="2026-06-17T20:07:10.509Z" data-timestamp="2026-06-17T20:07:10.509Z">2026-06-17T20:07:10.509Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T20-07-11-392Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T20-07-11-392Z" class="timestamp-link"><time datetime="2026-06-17T20:07:11.392Z" data-timestamp="2026-06-17T20:07:11.392Z">2026-06-17T20:07:11.392Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Let me capture the state vocabulary we just nailed down — <code>canceled</code> vs <code>failed</code> and <code>disabled</code> vs <code>deleted</code> are exactly the kind of distinctions that get muddled later.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T20-07-18-508Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T20-07-18-508Z" class="timestamp-link"><time datetime="2026-06-17T20:07:18.508Z" data-timestamp="2026-06-17T20:07:18.508Z">2026-06-17T20:07:18.508Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_011tPhNhm35k3uG1zFaAPGSw">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">CONTEXT.md</span></div>
+<div class="file-tool-fullpath">/Users/nbbaier/Code/droplet-take-home/CONTEXT.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">### Delivery
+One Event headed to one Endpoint. The unit we track and retry. Has a status
+(e.g. pending → delivered/failed) and a retry count. One Event ingested with N
+matching Endpoints produces N Deliveries.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">### Delivery
+One Event headed to one Endpoint. The unit we track and retry. Has a status and a
+retry count. One Event ingested with N matching Endpoints produces N Deliveries.
+
+Delivery status values:
+- **pending** — waiting to be attempted (or waiting out backoff).
+- **processing** — claimed by the worker, attempt in flight.
+- **delivered** — terminal; an Attempt succeeded (2xx).
+- **failed** — terminal; retries exhausted or a permanent error (e.g. 4xx).
+- **canceled** — terminal; the target Endpoint was deleted or disabled before
+  delivery. Nothing *failed* — distinct from `failed`.
+
+### Endpoint states
+- **active** — receives fan-out and is delivered to.
+- **disabled** — turned off by the system (e.g. after a 410 Gone). Reversible. No
+  new Deliveries are created; queued ones are canceled.
+- **deleted** — soft-deleted by an operator (`deleted_at` set). Rows are retained
+  for the audit trail; queued Deliveries are canceled.
+
+Routing is frozen at fan-out time: a Delivery, once created, is unaffected by later
+changes to the Endpoint&#39;s subscribed Event Types.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-17T20-07-18-663Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-17T20-07-18-663Z" class="timestamp-link"><time datetime="2026-06-17T20:07:18.663Z" data-timestamp="2026-06-17T20:07:18.663Z">2026-06-17T20:07:18.663Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/nbbaier/Code/droplet-take-home/CONTEXT.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T20-07-21-907Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T20-07-21-907Z" class="timestamp-link"><time datetime="2026-06-17T20:07:21.907Z" data-timestamp="2026-06-17T20:07:21.907Z">2026-06-17T20:07:21.907Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-17T20-07-34-163Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-17T20-07-34-163Z" class="timestamp-link"><time datetime="2026-06-17T20:07:34.163Z" data-timestamp="2026-06-17T20:07:34.163Z">2026-06-17T20:07:34.163Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Captured. Now your demo question — <em>how do you show off these edge cases?</em> — is a great instinct, because a failure-handling feature nobody can see is worth almost nothing to a reviewer. This is exactly what the <strong>harness scenario runner</strong> is for. Make the harness a menu of named, self-contained scenarios, each of which sets up, triggers, and then <em>prints the resulting state</em> so the behavior is legible without a UI.</p>
+<p>My recommendation — the harness exposes named scenarios (<code>bun run harness &lt;name&gt;</code> or a menu), each ending with a printed before/after of the relevant Deliveries + a <code>status</code> snapshot:</p>
+<ul>
+<li><strong><code>happy-path</code></strong> — 3 endpoints across types, fire matching events, watch all reach <code>delivered</code>.</li>
+<li><strong><code>retry-recovery</code></strong> — a <code>fail-then-recover</code> sink (500×2 then 200); print the Attempt log showing <code>failed, failed, delivered</code> with the backoff timestamps. <em>This is the headline demo.</em></li>
+<li><strong><code>permanent-failure</code></strong> — an always-<code>400</code> sink; show the Delivery going straight to <code>failed</code> with no wasted retries.</li>
+<li><strong><code>gone-disables</code></strong> — a <code>410</code> sink; show the Endpoint flip to <code>disabled</code> and queued Deliveries flip to <code>canceled</code>.</li>
+<li><strong><code>delete-cancels</code></strong> — fire events, then delete an Endpoint mid-flight; show its pending Deliveries become <code>canceled</code> while others continue.</li>
+<li><strong><code>signature-verified</code></strong> — a <code>verify-signature</code> sink that returns 200 only on a valid HMAC; show it succeed, then a tampered-secret variant rejected.</li>
+<li><strong><code>routing</code></strong> — endpoints with disjoint <code>event_types</code>; fire one event; show only matching endpoints get Deliveries.</li>
+</ul>
+<p>The taste move: each scenario <strong>prints the Attempt timeline and the relevant <code>status</code> counts at the end</strong>, so the terminal output <em>is</em> the proof. That, plus your <code>bun test</code> suite asserting the same outcomes, means you've both <em>demonstrated</em> and <em>verified</em> every failure mode — directly hitting the "things fail in weird ways" rubric line. The scenarios and the integration tests can even share the same setup helpers.</p>
+<p>Want that scenario catalog as the harness shape? And should each <code>bun test</code> case map 1:1 to a scenario (shared setup), or keep tests separate and leaner?</p></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-004.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<span class="current">5</span>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-009.html">9</a>
+<a href="page-010.html">10</a>
+<a href="page-011.html">11</a>
+<a href="page-012.html">12</a>
+<a href="page-013.html">13</a>
+<a href="page-014.html">14</a>
+<a href="page-015.html">15</a>
+<a href="page-006.html">Next &rarr;</a>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

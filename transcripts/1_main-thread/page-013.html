@@ -1,0 +1,1978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 13</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 13/15</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-012.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-009.html">9</a>
+<a href="page-010.html">10</a>
+<a href="page-011.html">11</a>
+<a href="page-012.html">12</a>
+<span class="current">13</span>
+<a href="page-014.html">14</a>
+<a href="page-015.html">15</a>
+<a href="page-014.html">Next &rarr;</a>
+</div>
+
+        
+<div class="message user" id="msg-2026-06-18T00-25-14-515Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-18T00-25-14-515Z" class="timestamp-link"><time datetime="2026-06-18T00:25:14.515Z" data-timestamp="2026-06-18T00:25:14.515Z">2026-06-18T00:25:14.515Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Alright reader for review</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-25-29-511Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-25-29-511Z" class="timestamp-link"><time datetime="2026-06-18T00:25:29.511Z" data-timestamp="2026-06-18T00:25:29.511Z">2026-06-18T00:25:29.511Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>I'll review your work. Let me see what's changed since the last commit.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-25-31-068Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-25-31-068Z" class="timestamp-link"><time datetime="2026-06-18T00:25:31.068Z" data-timestamp="2026-06-18T00:25:31.068Z">2026-06-18T00:25:31.068Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_013PWpNyzR2Q24mUBHqYnGZh">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Survey changes since harness commit</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">echo &#34;=== commits since harness scaffold ===&#34; &amp;&amp; git log --oneline -6 &amp;&amp; echo &amp;&amp; echo &#34;=== working tree ===&#34; &amp;&amp; git status --short &amp;&amp; echo &amp;&amp; echo &#34;=== diff vs last commit (727e55f) ===&#34; &amp;&amp; git diff 727e55f --stat</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T00-25-31-183Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T00-25-31-183Z" class="timestamp-link"><time datetime="2026-06-18T00:25:31.183Z" data-timestamp="2026-06-18T00:25:31.183Z">2026-06-18T00:25:31.183Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>=== commits since harness scaffold ===
+727e55f fix(harness): scope delivery assertions to the test&#x27;s own endpoint
+e8f2d43 feat(harness): scaffold test harness + bun test scenarios (PLAN step 4)
+fc14ef9 feat(sinks): implement fail-then-recover and verify-signature behaviors
+6c6f09c feat: scaffold sinks subsystem (in-process test receivers)
+6587fcc docs: document signature contract and mark completed plan items
+3353182 fix: address code-review findings in delivery + classifier
+
+=== working tree ===
+ M .gitignore
+ M src/harness/index.ts
+ M src/harness/scenarios.ts
+ M src/server.ts
+ M src/store/endpoints.ts
+ M test/scenarios.test.ts
+
+=== diff vs last commit (727e55f) ===
+ .gitignore               |   2 +-
+ src/harness/index.ts     |   6 +-
+ src/harness/scenarios.ts | 214 ++++++++++++++++++++-------------
+ src/server.ts            |  23 +++-
+ src/store/endpoints.ts   |   4 +-
+ test/scenarios.test.ts   | 303 +++++++++++++++++++++++++++++++++++++++--------
+ 6 files changed, 411 insertions(+), 141 deletions(-)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-25-36-056Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-25-36-056Z" class="timestamp-link"><time datetime="2026-06-18T00:25:36.056Z" data-timestamp="2026-06-18T00:25:36.056Z">2026-06-18T00:25:36.056Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-25-36-792Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-25-36-792Z" class="timestamp-link"><time datetime="2026-06-18T00:25:36.792Z" data-timestamp="2026-06-18T00:25:36.792Z">2026-06-18T00:25:36.792Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Substantial work — the six scenarios, the test cases, and what looks like the <code>DELETE /endpoints/:id</code> route. Let me read the full diff.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-25-37-316Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-25-37-316Z" class="timestamp-link"><time datetime="2026-06-18T00:25:37.316Z" data-timestamp="2026-06-18T00:25:37.316Z">2026-06-18T00:25:37.316Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_017EwxiNsgyYVYwe5JiGWG8u">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Diff of server, endpoints store, gitignore, harness index</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">git diff 727e55f -- src/server.ts src/store/endpoints.ts .gitignore src/harness/index.ts</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T00-25-37-385Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T00-25-37-385Z" class="timestamp-link"><time datetime="2026-06-18T00:25:37.385Z" data-timestamp="2026-06-18T00:25:37.385Z">2026-06-18T00:25:37.385Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>diff --git a/.gitignore b/.gitignore
+index 9914a8f..a1d7024 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,6 +1,6 @@
+ _.log
+ .cache
+-.cursor/hooks/state/continual-learning.json
++.cursor/hooks/state/continual-learning*
+ .DS_Store
+ .env
+ .env.development.local
+diff --git a/src/harness/index.ts b/src/harness/index.ts
+index 54bb766..5115695 100644
+--- a/src/harness/index.ts
++++ b/src/harness/index.ts
+@@ -19,7 +19,9 @@ async function runScenario(name: string, scenario: Scenario): Promise&lt;void&gt; {
+ 		await scenario(daemon.baseUrl);
+ 		console.log(`\n✓ ${name} complete\n`);
+ 	} catch (err) {
+-		console.error(`\n✗ ${name} failed: ${err instanceof Error ? err.message : err}\n`);
++		console.error(
++			`\n✗ ${name} failed: ${err instanceof Error ? err.message : err}\n`,
++		);
+ 		process.exitCode = 1;
+ 	} finally {
+ 		await daemon.stop();
+@@ -47,7 +49,7 @@ async function menu(): Promise&lt;void&gt; {
+ 			process.stdout.write(&quot;Pick a scenario (number or name): &quot;);
+ 			continue;
+ 		}
+-		await runScenario(name, scenarios[name]!);
++		await runScenario(name, scenarios[name] as unknown as Scenario);
+ 		return;
+ 	}
+ }
+diff --git a/src/server.ts b/src/server.ts
+index 2eaf685..589b853 100644
+--- a/src/server.ts
++++ b/src/server.ts
+@@ -13,8 +13,17 @@ import { fanOut } from &quot;./fanout&quot;;
+ import { newId } from &quot;./ids&quot;;
+ import { behaviorResponse } from &quot;./sinks&quot;;
+ import { listAttemptsForDelivery } from &quot;./store/attempts&quot;;
+-import { getDelivery, listDeliveries } from &quot;./store/deliveries&quot;;
+-import { createEndpoint, getEndpoint, listEndpoints } from &quot;./store/endpoints&quot;;
++import {
++	cancelDeliveriesForEndpoint,
++	getDelivery,
++	listDeliveries,
++} from &quot;./store/deliveries&quot;;
++import {
++	createEndpoint,
++	getEndpoint,
++	listEndpoints,
++	softDeleteEndpoint,
++} from &quot;./store/endpoints&quot;;
+ import { createEvent } from &quot;./store/events&quot;;
+ import { createSink, getSink, incrementHits } from &quot;./store/sinks&quot;;
+ import {
+@@ -115,5 +124,13 @@ app.post(&quot;/_sink/:id&quot;, async (c) =&gt; {
+ 	return behaviorResponse({ ...sink, hits }, endpoint, c.req.raw);
+ });
+ 
++app.delete(&quot;/endpoints/:id&quot;, async (c) =&gt; {
++	const id = c.req.param(&quot;id&quot;);
++	const endpoint = await getEndpoint(id);
++	if (!endpoint) return c.json({ error: &quot;endpoint_not_found&quot; }, 404);
++	await softDeleteEndpoint(id);
++	await cancelDeliveriesForEndpoint(id);
++	return c.body(null, 204);
++});
++
+ // TODO (PLAN step 5): GET /status (computed-on-read metrics snapshot).
+-// TODO: DELETE /endpoints/:id (soft-delete + cancel its queued Deliveries).
+diff --git a/src/store/endpoints.ts b/src/store/endpoints.ts
+index e02bd1e..6238429 100644
+--- a/src/store/endpoints.ts
++++ b/src/store/endpoints.ts
+@@ -28,7 +28,9 @@ function generateSecret(): string {
+ 	return `whsec_${crypto.randomUUID().replaceAll(&quot;-&quot;, &quot;&quot;)}`;
+ }
+ 
+-export async function createEndpoint(input: RegisterEndpointInput): Promise&lt;Endpoint&gt; {
++export async function createEndpoint(
++	input: RegisterEndpointInput,
++): Promise&lt;Endpoint&gt; {
+ 	const now = new Date().toISOString();
+ 	const endpoint: Endpoint = {
+ 		id: newId(&quot;ep&quot;),</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-26-01-927Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-26-01-927Z" class="timestamp-link"><time datetime="2026-06-18T00:26:01.927Z" data-timestamp="2026-06-18T00:26:01.927Z">2026-06-18T00:26:01.927Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-26-02-370Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-26-02-370Z" class="timestamp-link"><time datetime="2026-06-18T00:26:02.370Z" data-timestamp="2026-06-18T00:26:02.370Z">2026-06-18T00:26:02.370Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>The DELETE route looks clean, but it surfaces a potential race I want to check against the scenario. Let me read the scenarios and tests.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-26-03-249Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-26-03-249Z" class="timestamp-link"><time datetime="2026-06-18T00:26:03.249Z" data-timestamp="2026-06-18T00:26:03.249Z">2026-06-18T00:26:03.249Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01M6X35HSRTzsEU6F6j3yxhd"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/nbbaier/Code/droplet-take-home/src/harness/scenarios.ts&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T00-26-03-337Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T00-26-03-337Z" class="timestamp-link"><time datetime="2026-06-18T00:26:03.337Z" data-timestamp="2026-06-18T00:26:03.337Z">2026-06-18T00:26:03.337Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	/**
+2	 * Scenario registry: name -&gt; async (baseUrl) =&gt; void. Each scenario drives the
+3	 * daemon over HTTP (via ./client) and PRINTS a human-readable timeline + a small
+4	 * status summary derived from GET /deliveries (NOT a status endpoint — that&#x27;s
+5	 * PLAN step 5). The matching `bun test` cases ASSERT the same setup; share these
+6	 * helpers, don&#x27;t fork the logic.
+7	 *
+8	 * `happy-path` is fully worked as the reference template. Keep the print/assert
+9	 * split — scenarios print, tests assert.
+10	 */
+11	
+12	import {
+13		createSink,
+14		deliveriesFor,
+15		emitEvent,
+16		getDeliveryWithAttempts,
+17		listEndpoints,
+18		waitForSettled,
+19	} from &quot;./client&quot;;
+20	
+21	export type Scenario = (baseUrl: string) =&gt; Promise&lt;void&gt;;
+22	
+23	// ---------------------------------------------------------------------------
+24	// Shared print helpers (used by scenarios; tests assert on the same data shape).
+25	// ---------------------------------------------------------------------------
+26	
+27	/** Print a Delivery&#x27;s per-Attempt timeline: one line per try, status code/error. */
+28	async function printDeliveryTimeline(
+29		baseUrl: string,
+30		deliveryId: string,
+31	): Promise&lt;void&gt; {
+32		const d = await getDeliveryWithAttempts(baseUrl, deliveryId);
+33		console.log(`  delivery ${d.id}`);
+34		console.log(`    status:        ${d.status}`);
+35		console.log(`    attempt_count: ${d.attemptCount}`);
+36		if (d.attempts.length === 0) {
+37			console.log(`    attempts:      (none)`);
+38			return;
+39		}
+40		console.log(`    attempts:`);
+41		for (const a of d.attempts) {
+42			const outcome =
+43				a.statusCode !== null ? `HTTP ${a.statusCode}` : `error: ${a.error}`;
+44			console.log(`      #${a.attemptNumber}  ${outcome}  (${a.durationMs}ms)`);
+45		}
+46	}
+47	
+48	/** Print a one-line status tally across all settled Deliveries. */
+49	function printStatusSummary(
+50		deliveries: Array&lt;{ status: string }&gt;,
+51		label = &quot;summary&quot;,
+52	): void {
+53		const tally: Record&lt;string, number&gt; = {};
+54		for (const d of deliveries) tally[d.status] = (tally[d.status] ?? 0) + 1;
+55		const parts = Object.entries(tally).map(([s, n]) =&gt; `${s}=${n}`);
+56		console.log(`  ${label}: ${parts.join(&quot;, &quot;) || &quot;(no deliveries)&quot;}`);
+57	}
+58	
+59	// ---------------------------------------------------------------------------
+60	// happy-path — the fully-worked reference scenario.
+61	// ---------------------------------------------------------------------------
+62	
+63	/**
+64	 * Healthy endpoint, single event, delivered on the first try.
+65	 *
+66	 * setup:  always-200 sink (auto-registers an Endpoint).
+67	 * emit:   one order.created event.
+68	 * assert (in the test): one Delivery, status `delivered`, attempt_count === 1,
+69	 *         single Attempt with a 2xx status code.
+70	 */
+71	const happyPath: Scenario = async (baseUrl) =&gt; {
+72		console.log(&quot;happy-path: healthy endpoint, delivered on first try\n&quot;);
+73	
+74		await createSink(baseUrl, { behavior: &quot;always-200&quot; });
+75		const { deliveryCount } = await emitEvent(baseUrl, {
+76			type: &quot;order.created&quot;,
+77			data: { orderId: &quot;ord_1&quot;, total: 42 },
+78		});
+79		console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+80	
+81		const settled = await waitForSettled(baseUrl, { expectedCount: 1 });
+82		for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+83		printStatusSummary(settled);
+84	};
+85	
+86	const retryRecovery: Scenario = async (baseUrl) =&gt; {
+87		console.log(&quot;retry-recovery: transient 500s, then delivered\n&quot;);
+88	
+89		await createSink(baseUrl, { behavior: &quot;fail-then-recover&quot; });
+90		const { deliveryCount } = await emitEvent(baseUrl, {
+91			type: &quot;payment.succeeded&quot;,
+92			data: { paymentId: &quot;pay_1&quot;, amount: 42 },
+93		});
+94		console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+95	
+96		const settled = await waitForSettled(baseUrl, { expectedCount: 1 });
+97		for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+98		printStatusSummary(settled);
+99	};
+100	
+101	const permanentFailure: Scenario = async (baseUrl) =&gt; {
+102		console.log(&quot;permanent-failure: always-500, retries exhausted\n&quot;);
+103	
+104		await createSink(baseUrl, { behavior: &quot;always-500&quot; });
+105		const { deliveryCount } = await emitEvent(baseUrl, {
+106			type: &quot;payment.failed&quot;,
+107			data: { paymentId: &quot;pay_1&quot;, amount: 42 },
+108		});
+109		console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+110	
+111		const settled = await waitForSettled(baseUrl, { expectedCount: 1 });
+112		for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+113		printStatusSummary(settled);
+114	};
+115	
+116	const goneDisables: Scenario = async (baseUrl) =&gt; {
+117		console.log(&quot;gone-disables: 410 disables the endpoint\n&quot;);
+118	
+119		const { endpoint } = await createSink(baseUrl, { behavior: &quot;410-gone&quot; });
+120		const { deliveryCount } = await emitEvent(baseUrl, {
+121			type: &quot;order.created&quot;,
+122			data: { orderId: &quot;ord_gone&quot;, total: 99 },
+123		});
+124		console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+125	
+126		const settled = await waitForSettled(baseUrl, {
+127			endpointId: endpoint.id,
+128			expectedCount: 1,
+129		});
+130		for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+131		printStatusSummary(settled);
+132	
+133		const endpoints = await listEndpoints(baseUrl);
+134		const ep = endpoints.find((e) =&gt; e.id === endpoint.id);
+135		console.log(`  endpoint ${endpoint.id}: state=${ep?.state ?? &quot;unknown&quot;}`);
+136	
+137		const beforeSecond = (await deliveriesFor(baseUrl, endpoint.id)).length;
+138		const { deliveryCount: secondCount } = await emitEvent(baseUrl, {
+139			type: &quot;order.created&quot;,
+140			data: { orderId: &quot;ord_gone_2&quot;, total: 100 },
+141		});
+142		const afterSecond = (await deliveriesFor(baseUrl, endpoint.id)).length;
+143		console.log(
+144			`  second emit: deliveryCount=${secondCount}, endpoint deliveries ${beforeSecond} → ${afterSecond}`,
+145		);
+146	};
+147	
+148	const deleteCancels: Scenario = async (baseUrl) =&gt; {
+149		console.log(
+150			&quot;delete-cancels: deleting an endpoint cancels its in-flight deliveries\n&quot;,
+151		);
+152	
+153		const { endpoint } = await createSink(baseUrl, { behavior: &quot;slow&quot; });
+154		const { deliveryCount } = await emitEvent(baseUrl, {
+155			type: &quot;order.created&quot;,
+156			data: { orderId: &quot;ord_delete&quot;, total: 100 },
+157		});
+158		console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+159	
+160		const deleteRes = await fetch(`${baseUrl}/endpoints/${endpoint.id}`, {
+161			method: &quot;DELETE&quot;,
+162		});
+163		console.log(`  deleted endpoint ${endpoint.id}: HTTP ${deleteRes.status}`);
+164	
+165		const settled = await waitForSettled(baseUrl, {
+166			endpointId: endpoint.id,
+167			expectedCount: 1,
+168		});
+169		for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+170		printStatusSummary(settled);
+171	};
+172	
+173	const signatureVerified: Scenario = async (baseUrl) =&gt; {
+174		console.log(&quot;signature-verified: valid HMAC accepted\n&quot;);
+175	
+176		await createSink(baseUrl, { behavior: &quot;verify-signature&quot; });
+177		const { deliveryCount } = await emitEvent(baseUrl, {
+178			type: &quot;order.created&quot;,
+179			data: { orderId: &quot;ord_sig&quot;, total: 55 },
+180		});
+181		console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+182	
+183		const settled = await waitForSettled(baseUrl, { expectedCount: 1 });
+184		for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+185		printStatusSummary(settled);
+186	};
+187	
+188	const routing: Scenario = async (baseUrl) =&gt; {
+189		console.log(&quot;routing: fan-out to matching subscriptions only\n&quot;);
+190	
+191		const orderSink = await createSink(baseUrl, {
+192			behavior: &quot;always-200&quot;,
+193			eventTypes: [&quot;order.created&quot;],
+194		});
+195		const paymentSink = await createSink(baseUrl, {
+196			behavior: &quot;always-200&quot;,
+197			eventTypes: [&quot;payment.succeeded&quot;],
+198		});
+199		const wildcardSink = await createSink(baseUrl, {
+200			behavior: &quot;always-200&quot;,
+201			eventTypes: [&quot;*&quot;],
+202		});
+203	
+204		const { deliveryCount } = await emitEvent(baseUrl, {
+205			type: &quot;order.created&quot;,
+206			data: { orderId: &quot;ord_1&quot;, total: 1010 },
+207		});
+208		console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+209	
+210		const settled = await waitForSettled(baseUrl, { expectedCount: 2 });
+211		const endpointIds = new Set(settled.map((d) =&gt; d.endpointId));
+212		console.log(
+213			`  order.created endpoint (${orderSink.endpoint.id}): ${endpointIds.has(orderSink.endpoint.id) ? &quot;received&quot; : &quot;skipped&quot;}`,
+214		);
+215		console.log(
+216			`  payment.succeeded endpoint (${paymentSink.endpoint.id}): ${endpointIds.has(paymentSink.endpoint.id) ? &quot;received&quot; : &quot;skipped&quot;}`,
+217		);
+218		console.log(
+219			`  wildcard endpoint (${wildcardSink.endpoint.id}): ${endpointIds.has(wildcardSink.endpoint.id) ? &quot;received&quot; : &quot;skipped&quot;}`,
+220		);
+221		for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+222		printStatusSummary(settled);
+223	};
+224	
+225	export const scenarios: Record&lt;string, Scenario&gt; = {
+226		&quot;happy-path&quot;: happyPath,
+227		&quot;retry-recovery&quot;: retryRecovery,
+228		&quot;permanent-failure&quot;: permanentFailure,
+229		&quot;gone-disables&quot;: goneDisables,
+230		&quot;delete-cancels&quot;: deleteCancels,
+231		&quot;signature-verified&quot;: signatureVerified,
+232		routing,
+233	};
+234	
+235	export const scenarioNames = Object.keys(scenarios);
+236	
+237	export { printDeliveryTimeline, printStatusSummary };
+238	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-26-23-021Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-26-23-021Z" class="timestamp-link"><time datetime="2026-06-18T00:26:23.021Z" data-timestamp="2026-06-18T00:26:23.021Z">2026-06-18T00:26:23.021Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-26-23-608Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-26-23-608Z" class="timestamp-link"><time datetime="2026-06-18T00:26:23.608Z" data-timestamp="2026-06-18T00:26:23.608Z">2026-06-18T00:26:23.608Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>The scenarios are implemented. Now the test file — especially how <code>delete-cancels</code> asserts, given the worker race I'm worried about:</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-26-24-626Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-26-24-626Z" class="timestamp-link"><time datetime="2026-06-18T00:26:24.626Z" data-timestamp="2026-06-18T00:26:24.626Z">2026-06-18T00:26:24.626Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01FWCL8XemebubRGgYD1ghzL"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/nbbaier/Code/droplet-take-home/test/scenarios.test.ts&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T00-26-24-694Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T00-26-24-694Z" class="timestamp-link"><time datetime="2026-06-18T00:26:24.694Z" data-timestamp="2026-06-18T00:26:24.694Z">2026-06-18T00:26:24.694Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	/**
+2	 * `bun test` suite — 1:1 with the harness scenarios. Tests ASSERT; the harness
+3	 * scenarios (src/harness/scenarios.ts) PRINT. Both share the same HTTP client
+4	 * helpers and the same isolated-daemon bootstrap, so setup never forks.
+5	 *
+6	 * IMPORTANT: do NOT statically import from ../src/config or ../src/server here.
+7	 * The bootstrap sets env (DATABASE_URL/PORT/timing) and THEN dynamic-imports
+8	 * those modules; a static import would lock config in with the ambient env first.
+9	 * Import only the bootstrap + client helpers (client.ts is store/db-free).
+10	 *
+11	 * `happy-path` is fully asserted as the reference. Remaining scenarios follow the
+12	 * same pattern: share setup with scenarios.ts, assert on terminal delivery state.
+13	 */
+14	
+15	import { afterAll, beforeAll, describe, expect, test } from &quot;bun:test&quot;;
+16	import {
+17		createSink,
+18		deliveriesFor,
+19		emitEvent,
+20		getDeliveryWithAttempts,
+21		listEndpoints,
+22		waitForSettled,
+23	} from &quot;../src/harness/client&quot;;
+24	import { startTestDaemon, type TestDaemon } from &quot;../src/testing/bootstrap&quot;;
+25	import type { Attempt, Delivery } from &quot;../src/types&quot;;
+26	
+27	const maxAttempts = Number(process.env.MAX_ATTEMPTS ?? 5);
+28	
+29	let daemon: TestDaemon;
+30	
+31	beforeAll(async () =&gt; {
+32		daemon = await startTestDaemon();
+33	});
+34	
+35	afterAll(async () =&gt; {
+36		await daemon.stop();
+37	});
+38	
+39	describe(&quot;happy-path&quot;, () =&gt; {
+40		test(&quot;healthy endpoint is delivered on the first attempt&quot;, async () =&gt; {
+41			const { endpoint } = await createSink(daemon.baseUrl, {
+42				behavior: &quot;always-200&quot;,
+43			});
+44	
+45			await emitEvent(daemon.baseUrl, {
+46				type: &quot;order.created&quot;,
+47				data: { orderId: &quot;ord_1&quot;, total: 42 },
+48			});
+49	
+50			await waitForSettled(daemon.baseUrl, {
+51				endpointId: endpoint.id,
+52				expectedCount: 1,
+53			});
+54	
+55			const settled = await deliveriesFor(daemon.baseUrl, endpoint.id);
+56			expect(settled).toHaveLength(1);
+57	
+58			const delivery = settled[0] as unknown as Delivery;
+59			expect(delivery.status).toBe(&quot;delivered&quot;);
+60			expect(delivery.attemptCount).toBe(1);
+61	
+62			const detail = await getDeliveryWithAttempts(daemon.baseUrl, delivery.id);
+63			expect(detail.attempts).toHaveLength(1);
+64			const attempt = detail.attempts[0] as unknown as Attempt;
+65			expect(attempt.statusCode).toBeGreaterThanOrEqual(200);
+66			expect(attempt.statusCode).toBeLessThan(300);
+67			expect(attempt.error).toBeNull();
+68		});
+69	});
+70	
+71	describe(&quot;retry-recovery&quot;, () =&gt; {
+72		test(&quot;recovers to delivered after transient 500s&quot;, async () =&gt; {
+73			const { endpoint } = await createSink(daemon.baseUrl, {
+74				behavior: &quot;fail-then-recover&quot;,
+75			});
+76	
+77			await emitEvent(daemon.baseUrl, {
+78				type: &quot;payment.succeeded&quot;,
+79				data: { paymentId: &quot;pay_1&quot;, amount: 42 },
+80			});
+81	
+82			await waitForSettled(daemon.baseUrl, {
+83				endpointId: endpoint.id,
+84				expectedCount: 1,
+85			});
+86	
+87			const settled = await deliveriesFor(daemon.baseUrl, endpoint.id);
+88			expect(settled).toHaveLength(1);
+89	
+90			const delivery = settled[0] as unknown as Delivery;
+91			expect(delivery.status).toBe(&quot;delivered&quot;);
+92			expect(delivery.attemptCount).toBe(4);
+93	
+94			const detail = await getDeliveryWithAttempts(daemon.baseUrl, delivery.id);
+95			expect(detail.attempts).toHaveLength(4);
+96			expect(detail.attempts[0]?.statusCode).toBe(500);
+97			expect(detail.attempts[1]?.statusCode).toBe(500);
+98			expect(detail.attempts[2]?.statusCode).toBe(500);
+99			const lastAttempt = detail.attempts[3] as unknown as Attempt;
+100			expect(lastAttempt.statusCode).toBeGreaterThanOrEqual(200);
+101			expect(lastAttempt.statusCode).toBeLessThan(300);
+102			expect(lastAttempt.error).toBeNull();
+103		});
+104	});
+105	
+106	describe(&quot;permanent-failure&quot;, () =&gt; {
+107		test(&quot;exhausts retries and ends failed&quot;, async () =&gt; {
+108			const { endpoint } = await createSink(daemon.baseUrl, {
+109				behavior: &quot;always-500&quot;,
+110			});
+111	
+112			await emitEvent(daemon.baseUrl, {
+113				type: &quot;payment.failed&quot;,
+114				data: { paymentId: &quot;pay_1&quot;, amount: 42 },
+115			});
+116	
+117			await waitForSettled(daemon.baseUrl, {
+118				endpointId: endpoint.id,
+119				expectedCount: 1,
+120			});
+121	
+122			const settled = await deliveriesFor(daemon.baseUrl, endpoint.id);
+123			expect(settled).toHaveLength(1);
+124	
+125			const delivery = settled[0] as unknown as Delivery;
+126			expect(delivery.status).toBe(&quot;failed&quot;);
+127			expect(delivery.attemptCount).toBe(maxAttempts);
+128	
+129			const detail = await getDeliveryWithAttempts(daemon.baseUrl, delivery.id);
+130			expect(detail.attempts).toHaveLength(maxAttempts);
+131			for (const attempt of detail.attempts) {
+132				expect(attempt.statusCode).toBe(500);
+133			}
+134		});
+135	});
+136	
+137	describe(&quot;gone-disables&quot;, () =&gt; {
+138		test(&quot;410 fails the delivery and disables the endpoint&quot;, async () =&gt; {
+139			const { endpoint } = await createSink(daemon.baseUrl, {
+140				behavior: &quot;410-gone&quot;,
+141			});
+142	
+143			await emitEvent(daemon.baseUrl, {
+144				type: &quot;order.created&quot;,
+145				data: { orderId: &quot;ord_gone&quot;, total: 99 },
+146			});
+147	
+148			await waitForSettled(daemon.baseUrl, {
+149				endpointId: endpoint.id,
+150				expectedCount: 1,
+151			});
+152	
+153			const settled = await deliveriesFor(daemon.baseUrl, endpoint.id);
+154			expect(settled).toHaveLength(1);
+155	
+156			const delivery = settled[0] as unknown as Delivery;
+157			expect(delivery.status).toBe(&quot;failed&quot;);
+158			expect(delivery.attemptCount).toBe(1);
+159	
+160			const detail = await getDeliveryWithAttempts(daemon.baseUrl, delivery.id);
+161			expect(detail.attempts).toHaveLength(1);
+162			expect(detail.attempts[0]?.statusCode).toBe(410);
+163	
+164			const endpoints = await listEndpoints(daemon.baseUrl);
+165			const ep = endpoints.find((e) =&gt; e.id === endpoint.id);
+166			expect(ep?.state).toBe(&quot;disabled&quot;);
+167	
+168			const beforeSecond = (await deliveriesFor(daemon.baseUrl, endpoint.id))
+169				.length;
+170			await emitEvent(daemon.baseUrl, {
+171				type: &quot;order.created&quot;,
+172				data: { orderId: &quot;ord_gone_2&quot;, total: 100 },
+173			});
+174			const afterSecond = (await deliveriesFor(daemon.baseUrl, endpoint.id))
+175				.length;
+176			expect(afterSecond).toBe(beforeSecond);
+177		});
+178	});
+179	
+180	describe(&quot;delete-cancels&quot;, () =&gt; {
+181		test(&quot;deleting an endpoint cancels its in-flight deliveries&quot;, async () =&gt; {
+182			const { endpoint } = await createSink(daemon.baseUrl, {
+183				behavior: &quot;slow&quot;,
+184			});
+185	
+186			await emitEvent(daemon.baseUrl, {
+187				type: &quot;order.created&quot;,
+188				data: { orderId: &quot;ord_delete&quot;, total: 100 },
+189			});
+190	
+191			const deleteRes = await fetch(
+192				`${daemon.baseUrl}/endpoints/${endpoint.id}`,
+193				{ method: &quot;DELETE&quot; },
+194			);
+195			expect(deleteRes.status).toBe(204);
+196	
+197			const settled = await waitForSettled(daemon.baseUrl, {
+198				endpointId: endpoint.id,
+199				expectedCount: 1,
+200			});
+201			expect(settled).toHaveLength(1);
+202	
+203			const delivery = settled[0] as unknown as Delivery;
+204			expect(delivery.status).toBe(&quot;canceled&quot;);
+205		});
+206	});
+207	
+208	describe(&quot;signature-verified&quot;, () =&gt; {
+209		test(&quot;a valid signature is accepted&quot;, async () =&gt; {
+210			const { endpoint } = await createSink(daemon.baseUrl, {
+211				behavior: &quot;verify-signature&quot;,
+212			});
+213	
+214			await emitEvent(daemon.baseUrl, {
+215				type: &quot;order.created&quot;,
+216				data: { orderId: &quot;ord_sig&quot;, total: 55 },
+217			});
+218	
+219			await waitForSettled(daemon.baseUrl, {
+220				endpointId: endpoint.id,
+221				expectedCount: 1,
+222			});
+223	
+224			const settled = await deliveriesFor(daemon.baseUrl, endpoint.id);
+225			expect(settled).toHaveLength(1);
+226	
+227			const delivery = settled[0] as unknown as Delivery;
+228			expect(delivery.status).toBe(&quot;delivered&quot;);
+229			expect(delivery.attemptCount).toBe(1);
+230	
+231			const detail = await getDeliveryWithAttempts(daemon.baseUrl, delivery.id);
+232			expect(detail.attempts).toHaveLength(1);
+233			const attempt = detail.attempts[0] as unknown as Attempt;
+234			expect(attempt.statusCode).toBeGreaterThanOrEqual(200);
+235			expect(attempt.statusCode).toBeLessThan(300);
+236			expect(attempt.error).toBeNull();
+237		});
+238	});
+239	
+240	describe(&quot;routing&quot;, () =&gt; {
+241		test(&quot;an event fans out only to matching subscriptions&quot;, async () =&gt; {
+242			const orderSink = await createSink(daemon.baseUrl, {
+243				behavior: &quot;always-200&quot;,
+244				eventTypes: [&quot;order.created&quot;],
+245			});
+246			const paymentSink = await createSink(daemon.baseUrl, {
+247				behavior: &quot;always-200&quot;,
+248				eventTypes: [&quot;payment.succeeded&quot;],
+249			});
+250			const wildcardSink = await createSink(daemon.baseUrl, {
+251				behavior: &quot;always-200&quot;,
+252				eventTypes: [&quot;*&quot;],
+253			});
+254	
+255			const beforeOrder = (
+256				await deliveriesFor(daemon.baseUrl, orderSink.endpoint.id)
+257			).length;
+258			const beforePayment = (
+259				await deliveriesFor(daemon.baseUrl, paymentSink.endpoint.id)
+260			).length;
+261			const beforeWildcard = (
+262				await deliveriesFor(daemon.baseUrl, wildcardSink.endpoint.id)
+263			).length;
+264	
+265			await emitEvent(daemon.baseUrl, {
+266				type: &quot;order.created&quot;,
+267				data: { orderId: &quot;ord_1&quot;, total: 1010 },
+268			});
+269	
+270			await waitForSettled(daemon.baseUrl, {
+271				endpointId: orderSink.endpoint.id,
+272				expectedCount: beforeOrder + 1,
+273			});
+274			await waitForSettled(daemon.baseUrl, {
+275				endpointId: wildcardSink.endpoint.id,
+276				expectedCount: beforeWildcard + 1,
+277			});
+278	
+279			const orderDeliveries = await deliveriesFor(
+280				daemon.baseUrl,
+281				orderSink.endpoint.id,
+282			);
+283			const paymentDeliveries = await deliveriesFor(
+284				daemon.baseUrl,
+285				paymentSink.endpoint.id,
+286			);
+287			const wildcardDeliveries = await deliveriesFor(
+288				daemon.baseUrl,
+289				wildcardSink.endpoint.id,
+290			);
+291	
+292			expect(orderDeliveries.length).toBe(beforeOrder + 1);
+293			expect(paymentDeliveries.length).toBe(beforePayment);
+294			expect(wildcardDeliveries.length).toBe(beforeWildcard + 1);
+295		});
+296	});
+297	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-27-39-885Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-27-39-885Z" class="timestamp-link"><time datetime="2026-06-18T00:27:39.885Z" data-timestamp="2026-06-18T00:27:39.885Z">2026-06-18T00:27:39.885Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-27-40-831Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-27-40-831Z" class="timestamp-link"><time datetime="2026-06-18T00:27:40.831Z" data-timestamp="2026-06-18T00:27:40.831Z">2026-06-18T00:27:40.831Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Tests are well-written — properly scoped via <code>endpointId</code> and before/after counts. Let me run the suite (a few times, to shake out any flakiness in <code>delete-cancels</code>) and typecheck:</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-27-41-800Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-27-41-800Z" class="timestamp-link"><time datetime="2026-06-18T00:27:41.800Z" data-timestamp="2026-06-18T00:27:41.800Z">2026-06-18T00:27:41.800Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01R3SaFVC29emdkdgiUUspRd">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Typecheck and run test suite three times for flakiness</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">bunx tsc --noEmit &amp;&amp; echo &#34;tsc OK&#34; &amp;&amp; for i in 1 2 3; do echo &#34;=== run $i ===&#34;; bun test 2&gt;&amp;1 | tail -5; done</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T00-28-08-141Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T00-28-08-141Z" class="timestamp-link"><time datetime="2026-06-18T00:28:08.141Z" data-timestamp="2026-06-18T00:28:08.141Z">2026-06-18T00:28:08.141Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>tsc OK
+=== run 1 ===
+
+ 7 pass
+ 0 fail
+ 46 expect() calls
+Ran 7 tests across 1 file. [634.00ms]
+=== run 2 ===
+
+ 7 pass
+ 0 fail
+ 46 expect() calls
+Ran 7 tests across 1 file. [631.00ms]
+=== run 3 ===
+
+ 7 pass
+ 0 fail
+ 46 expect() calls
+Ran 7 tests across 1 file. [653.00ms]</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-28-30-026Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-28-30-026Z" class="timestamp-link"><time datetime="2026-06-18T00:28:30.026Z" data-timestamp="2026-06-18T00:28:30.026Z">2026-06-18T00:28:30.026Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-28-46-712Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-28-46-712Z" class="timestamp-link"><time datetime="2026-06-18T00:28:46.712Z" data-timestamp="2026-06-18T00:28:46.712Z">2026-06-18T00:28:46.712Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>All 7 pass, three runs, zero flakiness, <code>tsc</code> clean. The scenarios and tests are genuinely good — properly scoped by <code>endpointId</code>, before/after counts for the routing/gone cases, and assertions that match the real semantics (retry-recovery <code>attempt_count === 4</code> with <code>[500,500,500,2xx]</code>, permanent-failure all-500s to <code>maxAttempts</code>, gone-disables checks the disabled state <em>and</em> that a second emit produces no delivery). Nice work.</p>
+<p>One real finding, plus minor nits.</p>
+<h2>🟠 Finding: the cancel guarantee has a race — masked by the test's <code>slow</code> sink</h2>
+<p>The <code>delete-cancels</code> test passes deterministically, but for a subtle reason that hides a real gap. <code>DELETE /endpoints/:id</code> calls <code>cancelDeliveriesForEndpoint</code> (sets <code>pending</code>/<code>processing</code> → <code>canceled</code>). But the worker's terminal writes — <code>markDelivered</code>, <code>markFailed</code>, <code>rescheduleDelivery</code> — update by id with <strong>no status guard</strong>:</p>
+<pre><code class="language-sql">UPDATE deliveries SET status = 'delivered', ... WHERE id = ?
+</code></pre>
+<p>So if a delivery is <strong>in-flight</strong> (<code>processing</code>) when the DELETE cancels it, and the worker's request then completes, the worker overwrites <code>canceled</code> → <code>delivered</code>/<code>failed</code>/<code>pending</code>. Your test never hits this because the <code>slow</code> sink (300ms) always trips the 100ms timeout, so the in-flight attempt errors → reschedules → the next claim hits <code>processDelivery</code>'s top-of-loop endpoint-deleted check → <code>cancelDelivery</code>. That backstop is what makes the test green.</p>
+<p>Swap in a <em>fast</em> endpoint and the guarantee breaks: worker claims → gets <code>200</code> → <code>markDelivered</code> overwrites the cancel → the delivery ends <code>delivered</code> despite the endpoint being deleted. The PLAN edge case ("soft-delete → in-flight Deliveries → <code>canceled</code>, not <code>failed</code>") is only half-honored.</p>
+<p><strong>Fix (small, robust):</strong> guard the terminal/retry writes so they only transition <em>from</em> <code>processing</code>:</p>
+<pre><code class="language-sql">UPDATE deliveries SET status = 'delivered', ... WHERE id = ? AND status = 'processing'
+</code></pre>
+<p>on <code>markDelivered</code>, <code>markFailed</code>, and <code>rescheduleDelivery</code>. Then a delivery that was canceled mid-flight stays canceled — the worker's write becomes a no-op. This also hardens the visibility-timeout reclaim path (a reclaimed row can't be double-written by a straggler). No regression: in the normal flow the row <em>is</em> <code>processing</code> when the worker writes.</p>
+<h2>Minor nits (non-blocking)</h2>
+<ul>
+<li><code>src/harness/index.ts:52</code> and the tests use <code>as unknown as Scenario</code> / <code>as unknown as Delivery</code> double-casts to shed <code>undefined</code>. A plain <code>!</code> (or <code>if (!x) throw</code>) reads better; the double-cast through <code>unknown</code> is a code smell. Likely biome nudging you away from <code>!</code> — fine either way, just noting.</li>
+<li>The <code>happy-path</code> <strong>scenario</strong> (not the test) lost the <code>endpointId</code> scoping in this revision. Harmless for the harness (fresh DB per run), but it's now inconsistent with the scoped test and the other scenarios. Optional to re-scope for consistency.</li>
+<li><code>.gitignore</code> broadened <code>continual-learning*</code> — unrelated to step 4 but harmless.</li>
+</ul>
+<h2>Verdict</h2>
+<p>Step 4 is functionally complete and the suite is solid. The cancel-race is the one thing I'd fix before calling delete-cancels "done," since it's a correctness gap in a guarantee you explicitly designed for — currently green only because of the <code>slow</code>+timeout setup.</p>
+<p>Want me to apply the <code>AND status = 'processing'</code> guard to the three writes in <code>src/store/deliveries.ts</code>? It's a 3-line change and I'll re-run the suite to confirm still-green.</p></div></div></div>
+<div class="message user" id="msg-2026-06-18T00-31-46-040Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-18T00-31-46-040Z" class="timestamp-link"><time datetime="2026-06-18T00:31:46.040Z" data-timestamp="2026-06-18T00:31:46.040Z">2026-06-18T00:31:46.040Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Great, I'll make those changes and commit then we can move on to what's next</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-31-56-571Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-31-56-571Z" class="timestamp-link"><time datetime="2026-06-18T00:31:56.571Z" data-timestamp="2026-06-18T00:31:56.571Z">2026-06-18T00:31:56.571Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Sounds good. Apply the <code>AND status = 'processing'</code> guard to <code>markDelivered</code>, <code>markFailed</code>, and <code>rescheduleDelivery</code>, then commit (and check off the step-4 boxes in PLAN.md while you're at it).</p>
+<p>When you're ready, <strong>what's next is PLAN step 5 — observability</strong>: the <code>GET /status</code> metrics endpoint (computed on-read), the <code>webhooks status</code> CLI command, and JSON-lines lifecycle logs. That's the last spine item; after it, the remaining work is the README (which the rubric weighs heavily) and the LLM-transcript inclusion.</p>
+<p>We can run step 5 the same way that's been working well — I draft a <code>/handoff</code> to <code>docs/</code>, you point a fresh agent at it, then I review. Flag me when you want that.</p></div></div></div>
+<div class="message user" id="msg-2026-06-18T00-44-28-520Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-18T00-44-28-520Z" class="timestamp-link"><time datetime="2026-06-18T00:44:28.520Z" data-timestamp="2026-06-18T00:44:28.520Z">2026-06-18T00:44:28.520Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Alright we're clear for the step 5 scaffold - /handoff like we did before</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-44-35-853Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-44-35-853Z" class="timestamp-link"><time datetime="2026-06-18T00:44:35.853Z" data-timestamp="2026-06-18T00:44:35.853Z">2026-06-18T00:44:35.853Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01Wxw5xf8e3bKrT2YJ2aGpuS">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Confirm latest commit and clean tree before handoff</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">git log --oneline -3 &amp;&amp; echo &#34;---&#34; &amp;&amp; git status --short</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T00-44-35-950Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T00-44-35-950Z" class="timestamp-link"><time datetime="2026-06-18T00:44:35.950Z" data-timestamp="2026-06-18T00:44:35.950Z">2026-06-18T00:44:35.950Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>ff614b8 test: implement full scenario tests and harness updates
+f491f1b feat: add DELETE /endpoints/:id to soft-delete endpoint and cancel deliveries
+727e55f fix(harness): scope delivery assertions to the test&#x27;s own endpoint
+---</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-44-42-878Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-44-42-878Z" class="timestamp-link"><time datetime="2026-06-18T00:44:42.878Z" data-timestamp="2026-06-18T00:44:42.878Z">2026-06-18T00:44:42.878Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-44-43-370Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-44-43-370Z" class="timestamp-link"><time datetime="2026-06-18T00:44:43.370Z" data-timestamp="2026-06-18T00:44:43.370Z">2026-06-18T00:44:43.370Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Tree's clean. Let me quickly confirm the cancel-race guard landed before we move on, then write the handoff.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-44-43-922Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-44-43-922Z" class="timestamp-link"><time datetime="2026-06-18T00:44:43.922Z" data-timestamp="2026-06-18T00:44:43.922Z">2026-06-18T00:44:43.922Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01NaK8M9LCEJCe47DmEjzuGm">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Verify the status guard was applied</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#34;status = &#39;processing&#39;&#34; src/store/deliveries.ts || echo &#34;NO GUARD FOUND&#34;</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T00-44-44-009Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T00-44-44-009Z" class="timestamp-link"><time datetime="2026-06-18T00:44:44.009Z" data-timestamp="2026-06-18T00:44:44.009Z">2026-06-18T00:44:44.009Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>95:			SET status = &#x27;processing&#x27;, claimed_at = ?, updated_at = ?
+99:				   OR (status = &#x27;processing&#x27; AND claimed_at &lt; ?)
+117:			WHERE id = ? AND status = &#x27;processing&#x27;`,
+131:			WHERE id = ? AND status = &#x27;processing&#x27;`,
+153:			WHERE id = ? AND status = &#x27;processing&#x27;`,</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-44-47-863Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-44-47-863Z" class="timestamp-link"><time datetime="2026-06-18T00:44:47.863Z" data-timestamp="2026-06-18T00:44:47.863Z">2026-06-18T00:44:47.863Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-44-48-330Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-44-48-330Z" class="timestamp-link"><time datetime="2026-06-18T00:44:48.330Z" data-timestamp="2026-06-18T00:44:48.330Z">2026-06-18T00:44:48.330Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Guard's in on all three writes (117/131/153). Now the step 5 handoff.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-44-50-497Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-44-50-497Z" class="timestamp-link"><time datetime="2026-06-18T00:44:50.497Z" data-timestamp="2026-06-18T00:44:50.497Z">2026-06-18T00:44:50.497Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01K2hVkXZ4U3fBmYZRp3hT97"><div class="tool-header"><span class="tool-icon">⚙</span> Skill</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;skill&#34;: &#34;handoff&#34;,
+  &#34;args&#34;: &#34;Scope: PLAN step 5 only — observability (GET /status metrics computed on-read, a `webhooks status` CLI command, and JSON-lines lifecycle logs). Save the handoff to docs/handoff-step5-observability.md (in the repo, like the others), not temp. The next agent scaffolds following the repo&#39;s implement-vs-stub convention, commits the scaffold, and the human implements whatever is stubbed.&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T00-44-50-577Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T00-44-50-577Z" class="timestamp-link"><time datetime="2026-06-18T00:44:50.577Z" data-timestamp="2026-06-18T00:44:50.577Z">2026-06-18T00:44:50.577Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Launching skill: handoff</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message user" id="msg-2026-06-18T00-44-50-576Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-18T00-44-50-576Z" class="timestamp-link"><time datetime="2026-06-18T00:44:50.576Z" data-timestamp="2026-06-18T00:44:50.576Z">2026-06-18T00:44:50.576Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Base directory for this skill: /Users/nbbaier/.claude/skills/handoff</p>
+<p>Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to the temporary directory of the user's OS - not the current workspace.</p>
+<p>Include a "suggested skills" section in the document, which suggests skills that the agent should invoke.</p>
+<p>Do not duplicate content already captured in other artifacts (PRDs, plans, ADRs, issues, commits, diffs). Reference them by path or URL instead.</p>
+<p>Redact any sensitive information, such as API keys, passwords, or personally identifiable information.</p>
+<p>If the user passed arguments, treat them as a description of what the next session will focus on and tailor the doc accordingly.</p>
+<p>ARGUMENTS: Scope: PLAN step 5 only — observability (GET /status metrics computed on-read, a <code>webhooks status</code> CLI command, and JSON-lines lifecycle logs). Save the handoff to docs/handoff-step5-observability.md (in the repo, like the others), not temp. The next agent scaffolds following the repo's implement-vs-stub convention, commits the scaffold, and the human implements whatever is stubbed.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-45-57-356Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-45-57-356Z" class="timestamp-link"><time datetime="2026-06-18T00:45:57.356Z" data-timestamp="2026-06-18T00:45:57.356Z">2026-06-18T00:45:57.356Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-46-37-689Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-46-37-689Z" class="timestamp-link"><time datetime="2026-06-18T00:46:37.689Z" data-timestamp="2026-06-18T00:46:37.689Z">2026-06-18T00:46:37.689Z</time></a></div><div class="message-content"><div class="file-tool write-tool" data-tool-id="toolu_01LveRXCaB9Yoqm7Tkh3jDAb">
+<div class="file-tool-header write-header"><span class="file-tool-icon">📝</span> Write <span class="file-tool-path">handoff-step5-observability.md</span></div>
+<div class="file-tool-fullpath">/Users/nbbaier/Code/droplet-take-home/docs/handoff-step5-observability.md</div>
+<div class="truncatable"><div class="truncatable-content"><pre class="file-content"># Handoff: scaffold observability (PLAN step 5)
+
+## Your task
+
+Scaffold **PLAN.md step 5** (&#34;Observability&#34;) for the webhook delivery service at
+`/Users/nbbaier/Code/droplet-take-home`. Steps 1–4 are done (engine, retries,
+signing, sinks, harness + tests). This is the last spine item. Three deliverables:
+
+1. `GET /status` — a metrics snapshot **computed on-read** from the tables.
+2. A minimal `webhooks status` CLI command that fetches and renders it.
+3. **JSON-lines lifecycle logs** emitted by the daemon at key events.
+
+A reviewing agent will check your work; the human implements whatever you stub.
+Leave `bunx tsc --noEmit` and `bun test` green, and commit the scaffold.
+
+## Read these first (source of truth — don&#39;t duplicate)
+
+- `PLAN.md` step 5 — the exact metric list and log-event list.
+- `docs/adr/0002-cli-over-http-api-no-dashboard.md` — observability is the CLI&#39;s
+  job now (no dashboard); the `status` view and logs must carry it, so make them
+  tasteful, not raw dumps. CLI/tools talk to the daemon over HTTP, never the DB.
+- `CONTEXT.md` — glossary (Delivery statuses, Endpoint states, Attempt).
+- `src/store/*.ts` — the data you aggregate. Mirror this store style for a new
+  `src/store/metrics.ts`. Relevant columns: `deliveries(status, next_attempt_at,
+  updated_at, attempt_count)`, `attempts(duration_ms, status_code, created_at)`,
+  `endpoints(state, deleted_at)`, `events`.
+- `src/server.ts` — add `GET /status` here; also where `event.ingested` logs.
+- `src/worker.ts`, `src/fanout.ts` — where most lifecycle logs are emitted.
+- `src/config.ts` — add a logging knob (see below).
+- `src/testing/bootstrap.ts` — set the log knob to silent in the test env (below).
+- `AGENTS.md` — Bun conventions; `@libsql/client` (async).
+
+## The scaffolding convention in this repo (IMPORTANT)
+
+Implement mechanical parts for real; **stub the genuinely interesting logic** with
+a clear marker + `// TODO (yours): ...`. For step 5:
+
+**Implement fully:**
+- `src/log.ts` — a tiny structured logger: `log(event: string, fields?: object)`
+  writes one JSON line (`{ ts, event, ...fields }`) to stdout. Respect a level/
+  silence knob so tests/harness aren&#39;t flooded (see config below). This is the
+  whole logger — implement it.
+- **All the enumerated log call sites** (mechanical, but they DO touch the engine —
+  that&#39;s expected for this step; keep them to pure `log(...)` side-effect lines):
+  - `event.ingested` — `POST /events` after `createEvent` (`event_id`, `type`).
+  - `delivery.created` — in `fanOut` after each `createDelivery` (`delivery_id`,
+    `event_id`, `endpoint_id`).
+  - `attempt.started` / `attempt.succeeded` / `attempt.failed` — in `worker.ts`
+    `processDelivery` around `deliverOne` (`delivery_id`, `attempt_number`,
+    `status_code`, `duration_ms`).
+  - `delivery.exhausted` — in `worker.ts` where retries run out → `markFailed`.
+  - `endpoint.disabled` — in `worker.ts` `gone` case after `disableEndpoint`
+    (`endpoint_id`).
+  Every line must carry `delivery_id`/`event_id` where available so logs are
+  correlatable.
+- `src/store/metrics.ts` — the **simple** on-read aggregations:
+  - `deliveryStatusCounts()` → counts by status (+ total).
+  - `endpointStateCounts()` → active / disabled / deleted / total.
+  - `inBackoffCount()` → `pending` rows with `next_attempt_at &gt; now`.
+  - `eventCount()` → total events.
+- `getStatusSnapshot()` (in metrics.ts) assembling a `StatusSnapshot` from the
+  simple parts above plus the stubbed advanced parts (below).
+- `GET /status` route returning the snapshot as JSON.
+- A `StatusSnapshot` type (full shape — define all fields, including the advanced
+  ones the human will fill).
+- A minimal `webhooks status` CLI: `src/cli/index.ts` (or similar) that fetches
+  `GET &lt;baseUrl&gt;/status` (base URL from `config.publicBaseUrl` or a `--url` flag)
+  and renders a basic readable summary. Add `&#34;status&#34;: &#34;bun run src/cli/index.ts
+  status&#34;` (or a `webhooks` bin) to `package.json`. Implement the fetch + a basic
+  render; leave the *polished* formatting to the human (see stubs).
+- `config.ts`: add a logging knob, e.g. `logLevel` from `LOG_LEVEL`
+  (`&#34;info&#34;` default; `&#34;silent&#34;` suppresses output).
+- `src/testing/bootstrap.ts`: set `process.env.LOG_LEVEL = &#34;silent&#34;` in the env
+  block so `bun test`/harness runs aren&#39;t flooded with log lines.
+
+**Stub for the human (return a clearly-marked PLACEHOLDER, do NOT throw — the
+endpoint must still respond 200 so it&#39;s demoable; mark each with `// TODO`):**
+- The **windowed/statistical metrics** — these involve real decisions (which
+  timestamp defines the window, inclusive bounds, p95 with small N) that the human
+  should own:
+  - `recentThroughput(windowMs)` — deliveries reaching a terminal state within the
+    window (use `deliveries.updated_at`).
+  - `successRate(windowMs)` — delivered ÷ (delivered + failed) over the window.
+  - `attemptLatencyPercentiles(windowMs)` — p50/p95 over `attempts.duration_ms`
+    (SQLite has no percentile function — fetch durations and compute in JS).
+  - `attemptsToSuccess()` — distribution/avg attempts for delivered deliveries.
+  Stub each to return `null`/`0`/`[]` (typed per `StatusSnapshot`) with a TODO
+  describing the exact computation. `getStatusSnapshot` wires them in so the shape
+  is complete and the endpoint returns 200 with partial data.
+- The **polished CLI rendering** — implement a basic dump, then leave a
+  `// TODO (yours): nicer formatting` (aligned table / sections / colors). CLI
+  taste is a deliberate human call here (it replaces the dashboard).
+
+## Suggested shape (confirm against current code before writing)
+
+```
+src/
+  log.ts                 — log(event, fields) → JSON line; honors config.logLevel
+  store/metrics.ts       — simple aggregations + getStatusSnapshot (advanced stubbed)
+  types.ts               — add StatusSnapshot (full shape)
+  server.ts              — add GET /status; add event.ingested log
+  fanout.ts              — add delivery.created log
+  worker.ts              — add attempt.* / delivery.exhausted / endpoint.disabled logs
+  config.ts              — add logLevel
+  cli/index.ts           — `status` command: fetch GET /status + basic render
+  testing/bootstrap.ts   — set LOG_LEVEL=silent in the env block
+package.json             — add the status CLI script
+test/                    — optional: a /status smoke test (200 + simple counts);
+                           leave advanced-metric assertions as test.todo
+```
+
+## Constraints / gotchas
+
+- Metrics are **computed on-read** with `GROUP BY`/filters — do NOT maintain a
+  parallel counter system (avoids drift; this is a deliberate design choice).
+- CLI/tools reach the daemon over HTTP only — never import the store/DB to read
+  state (ADR 0002). The `status` CLI hits `GET /status`.
+- Logs go to stdout as one JSON object per line. Keep fields flat and snake_case
+  to match the event names. Do NOT log secrets (Endpoint `secret`, signatures).
+- The logger MUST be silenceable (config.logLevel) and the test bootstrap MUST set
+  it silent, or `bun test` output drowns in log lines.
+- Engine edits in this step are limited to inserting `log(...)` call sites — do not
+  change delivery/retry/claim/sink behavior.
+- Run `bunx tsc --noEmit` and `bun test`; both must stay green (advanced-metric
+  tests, if any, are `test.todo`).
+- Commit the scaffold when green. Leave the stubbed metric math + CLI polish for
+  the human.
+
+## Definition of done
+
+- `src/log.ts`, log call sites, `src/store/metrics.ts` (simple parts), `GET /status`,
+  `StatusSnapshot` type, the `webhooks status` CLI (basic render), config knob, and
+  the bootstrap silence-in-tests change — all implemented.
+- Advanced metrics stubbed as typed placeholders with TODOs (endpoint returns 200).
+- CLI polished rendering left as a TODO over a working basic render.
+- `bunx tsc --noEmit` clean; `bun test` green.
+- A short written summary: what you implemented vs stubbed, the `StatusSnapshot`
+  shape, the logging knob name/default, and any deviations.
+
+## Suggested skills
+
+- None required. Follow the repo conventions above and prefer reading the existing
+  store/server/worker files over guessing Bun/libsql APIs. (`hallmark`/`impeccable`
+  are NOT needed — there&#39;s no GUI; CLI polish is plain text formatting.)
+</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T00-46-37-903Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T00-46-37-903Z" class="timestamp-link"><time datetime="2026-06-18T00:46:37.903Z" data-timestamp="2026-06-18T00:46:37.903Z">2026-06-18T00:46:37.903Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>File created successfully at: /Users/nbbaier/Code/droplet-take-home/docs/handoff-step5-observability.md (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T00-46-50-108Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T00-46-50-108Z" class="timestamp-link"><time datetime="2026-06-18T00:46:50.108Z" data-timestamp="2026-06-18T00:46:50.108Z">2026-06-18T00:46:50.108Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Handoff written to <strong><code>docs/handoff-step5-observability.md</code></strong> (in the repo, untracked).</p>
+<p>Scoped to step 5 with the splits tuned to where the real decisions and the real traps are:</p>
+<ul>
+<li><strong>Implement (mechanical):</strong> the <code>log.ts</code> JSON-lines logger, all enumerated log call sites (the one place engine files get touched — pure side-effect lines), the simple on-read metric queries (<code>deliveryStatusCounts</code>, <code>endpointStateCounts</code>, <code>inBackoffCount</code>, <code>eventCount</code>), <code>GET /status</code>, the <code>StatusSnapshot</code> type, a minimal <code>webhooks status</code> CLI, and the config log knob.</li>
+<li><strong>Stub (the genuinely interesting calls):</strong> the windowed/statistical metrics — throughput window, success rate, <strong>latency p50/p95</strong> (SQLite has no percentile fn → compute in JS), attempts-to-success — because the windowing/percentile decisions are real judgment calls. Plus the <strong>polished CLI rendering</strong>, since that taste is the human's (it replaces the dashboard).</li>
+</ul>
+<p>Two traps I called out specifically:
+1. <strong>Stubs return typed placeholders, not throws</strong> — so <code>GET /status</code> and the CLI still respond 200 and are demoable immediately (deviation from the throw-stub convention, justified for an always-on endpoint).
+2. <strong>The logger must be silenceable</strong> (<code>config.logLevel</code>) and the <strong>test bootstrap must set <code>LOG_LEVEL=silent</code></strong>, or the worker's per-attempt logs will flood <code>bun test</code> output.</p>
+<p>Also reinforced the on-read-only rule (no parallel counters), ADR-0002 (CLI over HTTP, never the DB), and "don't log secrets/signatures."</p>
+<p>Point your next agent at it. When it's committed, send me the diff and I'll review — focusing on the on-read metric correctness, the logger silence-in-tests wiring, and that the engine edits really are just <code>log(...)</code> insertions.</p></div></div></div>
+<div class="message user" id="msg-2026-06-18T01-02-44-924Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-18T01-02-44-924Z" class="timestamp-link"><time datetime="2026-06-18T01:02:44.924Z" data-timestamp="2026-06-18T01:02:44.924Z">2026-06-18T01:02:44.924Z</time></a></div><div class="message-content">
+<div class="user-content"><p>The scaffolding is done, give it a quick look before I impleme nt</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-02-48-768Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-02-48-768Z" class="timestamp-link"><time datetime="2026-06-18T01:02:48.768Z" data-timestamp="2026-06-18T01:02:48.768Z">2026-06-18T01:02:48.768Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>I'll review the step 5 scaffold. Let me see what landed.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-02-49-879Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-02-49-879Z" class="timestamp-link"><time datetime="2026-06-18T01:02:49.879Z" data-timestamp="2026-06-18T01:02:49.879Z">2026-06-18T01:02:49.879Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01KjEViKg2Z5RbrqkGj21qaR">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Survey step 5 scaffold state</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">echo &#34;=== commits ===&#34; &amp;&amp; git log --oneline -3 &amp;&amp; echo &amp;&amp; echo &#34;=== working tree ===&#34; &amp;&amp; git status --short &amp;&amp; echo &amp;&amp; echo &#34;=== diff stat vs last commit ===&#34; &amp;&amp; git diff HEAD --stat</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-02-50-001Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-02-50-001Z" class="timestamp-link"><time datetime="2026-06-18T01:02:50.001Z" data-timestamp="2026-06-18T01:02:50.001Z">2026-06-18T01:02:50.001Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>=== commits ===
+b7cc35e feat(observability): scaffold /status, status CLI, JSON-lines logs (PLAN step 5)
+ff614b8 test: implement full scenario tests and harness updates
+f491f1b feat: add DELETE /endpoints/:id to soft-delete endpoint and cancel deliveries
+
+=== working tree ===
+ M test/scenarios.test.ts
+
+=== diff stat vs last commit ===
+ test/scenarios.test.ts | 23 +++++------------------
+ 1 file changed, 5 insertions(+), 18 deletions(-)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-02-57-593Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-02-57-593Z" class="timestamp-link"><time datetime="2026-06-18T01:02:57.593Z" data-timestamp="2026-06-18T01:02:57.593Z">2026-06-18T01:02:57.593Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-02-57-898Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-02-57-898Z" class="timestamp-link"><time datetime="2026-06-18T01:02:57.898Z" data-timestamp="2026-06-18T01:02:57.898Z">2026-06-18T01:02:57.898Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Scaffold committed at <code>b7cc35e</code>, with an uncommitted tweak to the test file. Let me read the committed scaffold and the working-tree change.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-02-59-097Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-02-59-097Z" class="timestamp-link"><time datetime="2026-06-18T01:02:59.097Z" data-timestamp="2026-06-18T01:02:59.097Z">2026-06-18T01:02:59.097Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01MtMVWZUT9EXEJ5dVNuaUEa">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List scaffold files and show test change</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">echo &#34;=== files in scaffold commit ===&#34; &amp;&amp; git show b7cc35e --stat | tail -20 &amp;&amp; echo &amp;&amp; echo &#34;=== uncommitted change to test ===&#34; &amp;&amp; git diff HEAD -- test/scenarios.test.ts</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-02-59-212Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-02-59-212Z" class="timestamp-link"><time datetime="2026-06-18T01:02:59.212Z" data-timestamp="2026-06-18T01:02:59.212Z">2026-06-18T01:02:59.212Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>=== files in scaffold commit ===
+    - config.logLevel (LOG_LEVEL, default &quot;info&quot;; &quot;silent&quot; suppresses); test
+      bootstrap sets LOG_LEVEL=silent.
+    - /status smoke test (200 + consistent counts); advanced-metric tests as test.todo.
+    
+    Co-Authored-By: Claude Opus 4.8 &lt;noreply@anthropic.com&gt;
+
+ PLAN.md                             |  11 ++-
+ docs/handoff-step5-observability.md | 146 +++++++++++++++++++++++++++++
+ package.json                        |   3 +-
+ src/cli/index.ts                    |  95 +++++++++++++++++++
+ src/config.ts                       |  12 +++
+ src/fanout.ts                       |  12 ++-
+ src/log.ts                          |  24 +++++
+ src/server.ts                       |  13 ++-
+ src/store/metrics.ts                | 178 ++++++++++++++++++++++++++++++++++++
+ src/testing/bootstrap.ts            |   1 +
+ src/types.ts                        |  57 ++++++++++++
+ src/worker.ts                       |  30 +++++-
+ test/scenarios.test.ts              |  55 +++++++++++
+ 13 files changed, 629 insertions(+), 8 deletions(-)
+
+=== uncommitted change to test ===
+diff --git a/test/scenarios.test.ts b/test/scenarios.test.ts
+index 77f23a6..1a263de 100644
+--- a/test/scenarios.test.ts
++++ b/test/scenarios.test.ts
+@@ -348,21 +348,8 @@ describe(&quot;status&quot;, () =&gt; {
+ 		expect(snapshot.windowed.latencyMs).toBeDefined();
+ 	});
+ 
+-	// Advanced/windowed metric math is stubbed for the human — assert once implemented.
+-	test.todo(
+-		&quot;windowed throughput counts terminal deliveries in the window&quot;,
+-		() =&gt; {},
+-	);
+-	test.todo(
+-		&quot;successRate = delivered ÷ (delivered + failed) over the window&quot;,
+-		() =&gt; {},
+-	);
+-	test.todo(
+-		&quot;attempt latency p50/p95 computed from attempts.duration_ms&quot;,
+-		() =&gt; {},
+-	);
+-	test.todo(
+-		&quot;attemptsToSuccess distribution/avg for delivered deliveries&quot;,
+-		() =&gt; {},
+-	);
+-});
++	test.todo(&quot;windowed throughput counts terminal deliveries in the window&quot;, () =&gt; {});
++	test.todo(&quot;successRate = delivered ÷ (delivered + failed) over the window&quot;, () =&gt; {});
++	test.todo(&quot;attempt latency p50/p95 computed from attempts.duration_ms&quot;, () =&gt; {});
++	test.todo(&quot;attemptsToSuccess distribution/avg for delivered deliveries&quot;, () =&gt; {});
++});   
+\ No newline at end of file</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-05-858Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-05-858Z" class="timestamp-link"><time datetime="2026-06-18T01:03:05.858Z" data-timestamp="2026-06-18T01:03:05.858Z">2026-06-18T01:03:05.858Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-06-358Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-06-358Z" class="timestamp-link"><time datetime="2026-06-18T01:03:06.358Z" data-timestamp="2026-06-18T01:03:06.358Z">2026-06-18T01:03:06.358Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>The test change is just a linter reflow — harmless. Let me read the actual scaffold: logger, metrics, the type, the call sites, and the CLI.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-07-261Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-07-261Z" class="timestamp-link"><time datetime="2026-06-18T01:03:07.261Z" data-timestamp="2026-06-18T01:03:07.261Z">2026-06-18T01:03:07.261Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_014BPo9kR2Cp1pDgDuzoHrDo"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/nbbaier/Code/droplet-take-home/src/log.ts&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-03-07-356Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-03-07-356Z" class="timestamp-link"><time datetime="2026-06-18T01:03:07.356Z" data-timestamp="2026-06-18T01:03:07.356Z">2026-06-18T01:03:07.356Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	/**
+2	 * Tiny structured logger. Every lifecycle event is one JSON object per line on
+3	 * stdout: `{ ts, event, ...fields }`. Fields are kept flat and snake_case to
+4	 * match the event names so logs are greppable and machine-parseable.
+5	 *
+6	 * Correlate a Delivery&#x27;s whole life by `delivery_id` (and `event_id`); see the
+7	 * call sites in server.ts / fanout.ts / worker.ts.
+8	 *
+9	 * Silenceable via config.logLevel (&quot;silent&quot;) — the test bootstrap sets
+10	 * LOG_LEVEL=silent so `bun test`/harness runs aren&#x27;t drowned in log lines.
+11	 *
+12	 * Do NOT pass secrets (Endpoint `secret`, computed signatures) as fields.
+13	 */
+14	
+15	import { config } from &quot;./config&quot;;
+16	
+17	export type LogFields = Record&lt;string, unknown&gt;;
+18	
+19	/** Emit one JSON line for `event` with optional flat `fields`. No-op when silent. */
+20	export function log(event: string, fields: LogFields = {}): void {
+21		if (config.logLevel === &quot;silent&quot;) return;
+22		const line = { ts: new Date().toISOString(), event, ...fields };
+23		console.log(JSON.stringify(line));
+24	}
+25	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-07-588Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-07-588Z" class="timestamp-link"><time datetime="2026-06-18T01:03:07.588Z" data-timestamp="2026-06-18T01:03:07.588Z">2026-06-18T01:03:07.588Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_016u4hUUzSvNpQmRuQPSJuY9"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/nbbaier/Code/droplet-take-home/src/store/metrics.ts&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-03-07-652Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-03-07-652Z" class="timestamp-link"><time datetime="2026-06-18T01:03:07.652Z" data-timestamp="2026-06-18T01:03:07.652Z">2026-06-18T01:03:07.652Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	/**
+2	 * Metrics aggregations for `GET /status`, computed ON-READ from the tables with
+3	 * GROUP BY / filters — there is deliberately NO parallel counter system to drift
+4	 * out of sync (PLAN step 5). Mirrors the other store modules&#x27; style.
+5	 *
+6	 * Two tiers:
+7	 *  - Simple aggregations (deliveryStatusCounts, endpointStateCounts,
+8	 *    inBackoffCount, eventCount) — implemented.
+9	 *  - Windowed / statistical metrics (recentThroughput, successRate,
+10	 *    attemptLatencyPercentiles, attemptsToSuccess) — STUBBED for the human, who
+11	 *    owns the real decisions (window bounds, p95 with small N). Each returns a
+12	 *    typed placeholder so getStatusSnapshot returns a complete 200.
+13	 */
+14	
+15	import { db } from &quot;../db/client&quot;;
+16	import type { DeliveryStatus, StatusSnapshot } from &quot;../types&quot;;
+17	
+18	/** Default rolling window for the windowed metrics (5 minutes). */
+19	const DEFAULT_WINDOW_MS = 5 * 60 * 1_000;
+20	
+21	/** Counts of Deliveries by status, plus total. Missing statuses come back as 0. */
+22	export async function deliveryStatusCounts(): Promise&lt;
+23		StatusSnapshot[&quot;deliveries&quot;]
+24	&gt; {
+25		const result = await db.execute(
+26			`SELECT status, COUNT(*) AS n FROM deliveries GROUP BY status`,
+27		);
+28		const counts: StatusSnapshot[&quot;deliveries&quot;] = {
+29			pending: 0,
+30			processing: 0,
+31			delivered: 0,
+32			failed: 0,
+33			canceled: 0,
+34			total: 0,
+35		};
+36		for (const row of result.rows) {
+37			const status = row.status as DeliveryStatus;
+38			const n = Number(row.n);
+39			counts[status] = n;
+40			counts.total += n;
+41		}
+42		return counts;
+43	}
+44	
+45	/** Endpoint counts by lifecycle state. `deleted` (deleted_at set) is counted separately. */
+46	export async function endpointStateCounts(): Promise&lt;
+47		StatusSnapshot[&quot;endpoints&quot;]
+48	&gt; {
+49		const result = await db.execute(
+50			`SELECT
+51				SUM(CASE WHEN deleted_at IS NULL AND state = &#x27;active&#x27; THEN 1 ELSE 0 END) AS active,
+52				SUM(CASE WHEN deleted_at IS NULL AND state = &#x27;disabled&#x27; THEN 1 ELSE 0 END) AS disabled,
+53				SUM(CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END) AS deleted,
+54				COUNT(*) AS total
+55			FROM endpoints`,
+56		);
+57		const row = result.rows[0];
+58		return {
+59			active: Number(row?.active ?? 0),
+60			disabled: Number(row?.disabled ?? 0),
+61			deleted: Number(row?.deleted ?? 0),
+62			total: Number(row?.total ?? 0),
+63		};
+64	}
+65	
+66	/** `pending` Deliveries whose next_attempt_at is still in the future (waiting out backoff). */
+67	export async function inBackoffCount(): Promise&lt;number&gt; {
+68		const now = new Date().toISOString();
+69		const result = await db.execute({
+70			sql: `SELECT COUNT(*) AS n FROM deliveries
+71				WHERE status = &#x27;pending&#x27; AND next_attempt_at &gt; ?`,
+72			args: [now],
+73		});
+74		return Number(result.rows[0]?.n ?? 0);
+75	}
+76	
+77	/** Total Events ingested. */
+78	export async function eventCount(): Promise&lt;number&gt; {
+79		const result = await db.execute(`SELECT COUNT(*) AS n FROM events`);
+80		return Number(result.rows[0]?.n ?? 0);
+81	}
+82	
+83	// ---------------------------------------------------------------------------
+84	// Windowed / statistical metrics — STUBBED for the human.
+85	// Each returns a typed placeholder so GET /status stays 200. Implement the math
+86	// described in each TODO; do NOT introduce a counter table (compute on-read).
+87	// ---------------------------------------------------------------------------
+88	
+89	/**
+90	 * Deliveries reaching a terminal state within `windowMs`.
+91	 * TODO (yours): COUNT deliveries WHERE status IN (&#x27;delivered&#x27;,&#x27;failed&#x27;,&#x27;canceled&#x27;)
+92	 * AND updated_at &gt;= (now - windowMs). Decide the window anchor (updated_at is the
+93	 * terminal-transition time here) and whether the lower bound is inclusive.
+94	 */
+95	export async function recentThroughput(
+96		_windowMs: number = DEFAULT_WINDOW_MS,
+97	): Promise&lt;number&gt; {
+98		return 0;
+99	}
+100	
+101	/**
+102	 * Success rate over the window: delivered ÷ (delivered + failed).
+103	 * TODO (yours): COUNT delivered and failed deliveries with updated_at in-window,
+104	 * return delivered/(delivered+failed). Return null when the denominator is 0
+105	 * (no terminal deliveries yet) rather than 0 or NaN. `canceled` is excluded
+106	 * (nothing went wrong with the delivery itself — see CONTEXT.md).
+107	 */
+108	export async function successRate(
+109		_windowMs: number = DEFAULT_WINDOW_MS,
+110	): Promise&lt;number | null&gt; {
+111		return null;
+112	}
+113	
+114	/**
+115	 * p50/p95 of attempt duration_ms over the window.
+116	 * TODO (yours): SELECT duration_ms FROM attempts WHERE created_at in-window, then
+117	 * compute percentiles in JS (SQLite has no percentile fn). Decide the
+118	 * interpolation method and how to behave with small N (e.g. N&lt;2 → p95 == max?).
+119	 * Return { p50: null, p95: null } when there are no attempts in the window.
+120	 */
+121	export async function attemptLatencyPercentiles(
+122		_windowMs: number = DEFAULT_WINDOW_MS,
+123	): Promise&lt;{ p50: number | null; p95: number | null }&gt; {
+124		return { p50: null, p95: null };
+125	}
+126	
+127	/**
+128	 * Distribution / average of attempts taken for delivered Deliveries.
+129	 * TODO (yours): for deliveries WHERE status = &#x27;delivered&#x27;, use attempt_count to
+130	 * build a distribution (index = attempt number, value = count) and an average.
+131	 * Decide whether to window this. Return { avg: null, distribution: [] } when
+132	 * there are no delivered deliveries.
+133	 */
+134	export async function attemptsToSuccess(): Promise&lt;{
+135		avg: number | null;
+136		distribution: number[];
+137	}&gt; {
+138		return { avg: null, distribution: [] };
+139	}
+140	
+141	/**
+142	 * Assemble the full StatusSnapshot from the simple aggregations plus the stubbed
+143	 * windowed metrics. Always returns a complete shape so the endpoint is 200/demoable
+144	 * even while the windowed parts are placeholders.
+145	 */
+146	export async function getStatusSnapshot(
+147		windowMs: number = DEFAULT_WINDOW_MS,
+148	): Promise&lt;StatusSnapshot&gt; {
+149		const [deliveries, endpoints, inBackoff, events] = await Promise.all([
+150			deliveryStatusCounts(),
+151			endpointStateCounts(),
+152			inBackoffCount(),
+153			eventCount(),
+154		]);
+155	
+156		const [throughput, successRateValue, latencyMs, attemptsToSuccessValue] =
+157			await Promise.all([
+158				recentThroughput(windowMs),
+159				successRate(windowMs),
+160				attemptLatencyPercentiles(windowMs),
+161				attemptsToSuccess(),
+162			]);
+163	
+164		return {
+165			generatedAt: new Date().toISOString(),
+166			windowMs,
+167			deliveries,
+168			endpoints,
+169			inBackoff,
+170			events,
+171			windowed: {
+172				throughput,
+173				successRate: successRateValue,
+174				latencyMs,
+175				attemptsToSuccess: attemptsToSuccessValue,
+176			},
+177		};
+178	}
+179	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-13-611Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-13-611Z" class="timestamp-link"><time datetime="2026-06-18T01:03:13.611Z" data-timestamp="2026-06-18T01:03:13.611Z">2026-06-18T01:03:13.611Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-14-093Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-14-093Z" class="timestamp-link"><time datetime="2026-06-18T01:03:14.093Z" data-timestamp="2026-06-18T01:03:14.093Z">2026-06-18T01:03:14.093Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Logger and metrics are clean. Now the call sites, the type, the CLI, and config:</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-15-061Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-15-061Z" class="timestamp-link"><time datetime="2026-06-18T01:03:15.061Z" data-timestamp="2026-06-18T01:03:15.061Z">2026-06-18T01:03:15.061Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01ATdddjwnkQ51rjFT3xeqHD">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Show log call sites and config/bootstrap diffs</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">git show b7cc35e -- src/worker.ts src/fanout.ts src/server.ts src/config.ts src/testing/bootstrap.ts</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-03-15-170Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-03-15-170Z" class="timestamp-link"><time datetime="2026-06-18T01:03:15.170Z" data-timestamp="2026-06-18T01:03:15.170Z">2026-06-18T01:03:15.170Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>commit b7cc35e02b8c85ced29a5cd800b9028b97a21adf
+Author: Nico Baier &lt;nico.baier@gmail.com&gt;
+Date:   Wed Jun 17 20:00:46 2026 -0500
+
+    feat(observability): scaffold /status, status CLI, JSON-lines logs (PLAN step 5)
+    
+    Implement the mechanical observability surface; stub the windowed/statistical
+    metric math + polished CLI rendering for the human (clearly marked TODOs).
+    
+    - src/log.ts: tiny structured logger; one JSON line per event, silenceable via
+      config.logLevel.
+    - log call sites: event.ingested (server), delivery.created (fanout),
+      attempt.started/succeeded/failed + delivery.exhausted + endpoint.disabled
+      (worker). Correlatable by delivery_id/event_id.
+    - src/store/metrics.ts: on-read aggregations (delivery status counts, endpoint
+      state counts, in-backoff, event count) + getStatusSnapshot. Windowed metrics
+      (throughput/successRate/latency p50-p95/attemptsToSuccess) stubbed as typed
+      placeholders so GET /status stays 200.
+    - GET /status route + StatusSnapshot type (full shape).
+    - src/cli/index.ts: `webhooks status` thin HTTP client (--url or
+      config.publicBaseUrl); basic render, polish left as TODO. package.json status script.
+    - config.logLevel (LOG_LEVEL, default &quot;info&quot;; &quot;silent&quot; suppresses); test
+      bootstrap sets LOG_LEVEL=silent.
+    - /status smoke test (200 + consistent counts); advanced-metric tests as test.todo.
+    
+    Co-Authored-By: Claude Opus 4.8 &lt;noreply@anthropic.com&gt;
+
+diff --git a/src/config.ts b/src/config.ts
+index 6ddc6bc..4678d2f 100644
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -14,6 +14,11 @@ function num(name: string, fallback: number): number {
+ }
+ const port = num(&quot;PORT&quot;, 3000);
+ 
++/** Logging verbosity: &quot;info&quot; emits JSON-line lifecycle logs; &quot;silent&quot; suppresses. */
++function logLevel(): &quot;info&quot; | &quot;silent&quot; {
++	return process.env.LOG_LEVEL === &quot;silent&quot; ? &quot;silent&quot; : &quot;info&quot;;
++}
++
+ export const config = {
+ 	/** Where the libsql database file lives. */
+ 	databaseUrl: process.env.DATABASE_URL ?? &quot;file:./webhooks.db&quot;,
+@@ -56,6 +61,13 @@ export const config = {
+ 
+ 	/** How long the `slow` Sink behavior stalls before responding. */
+ 	sinkSlowDelayMs: num(&quot;SINK_SLOW_DELAY_MS&quot;, 15_000),
++
++	/**
++	 * Logging verbosity. &quot;info&quot; (default) emits one JSON line per lifecycle event
++	 * to stdout; &quot;silent&quot; suppresses all logs (tests/harness set LOG_LEVEL=silent
++	 * so `bun test` output isn&#x27;t flooded). See src/log.ts.
++	 */
++	logLevel: logLevel(),
+ } as const;
+ 
+ export type Config = typeof config;
+diff --git a/src/fanout.ts b/src/fanout.ts
+index c95b15c..49f0d4d 100644
+--- a/src/fanout.ts
++++ b/src/fanout.ts
+@@ -7,6 +7,7 @@
+  * + the `*` wildcard semantics).
+  */
+ 
++import { log } from &quot;./log&quot;;
+ import { createDelivery } from &quot;./store/deliveries&quot;;
+ import { listActiveEndpoints } from &quot;./store/endpoints&quot;;
+ import type { Endpoint, Event } from &quot;./types&quot;;
+@@ -27,6 +28,15 @@ export function matches(endpoint: Endpoint, eventType: Event[&quot;type&quot;]): boolean {
+ export async function fanOut(event: Event): Promise&lt;number&gt; {
+ 	const endpoints = await listActiveEndpoints();
+ 	const targets = endpoints.filter((e) =&gt; matches(e, event.type));
+-	await Promise.all(targets.map((e) =&gt; createDelivery(event.id, e.id)));
++	await Promise.all(
++		targets.map(async (e) =&gt; {
++			const delivery = await createDelivery(event.id, e.id);
++			log(&quot;delivery.created&quot;, {
++				delivery_id: delivery.id,
++				event_id: event.id,
++				endpoint_id: e.id,
++			});
++		}),
++	);
+ 	return targets.length;
+ }
+diff --git a/src/server.ts b/src/server.ts
+index f919078..9ce6dfb 100644
+--- a/src/server.ts
++++ b/src/server.ts
+@@ -11,6 +11,7 @@ import { Hono } from &quot;hono&quot;;
+ import { config } from &quot;./config&quot;;
+ import { fanOut } from &quot;./fanout&quot;;
+ import { newId } from &quot;./ids&quot;;
++import { log } from &quot;./log&quot;;
+ import { behaviorResponse } from &quot;./sinks&quot;;
+ import { listAttemptsForDelivery } from &quot;./store/attempts&quot;;
+ import {
+@@ -25,6 +26,7 @@ import {
+ 	softDeleteEndpoint,
+ } from &quot;./store/endpoints&quot;;
+ import { createEvent } from &quot;./store/events&quot;;
++import { getStatusSnapshot } from &quot;./store/metrics&quot;;
+ import { createSink, getSink, incrementHits } from &quot;./store/sinks&quot;;
+ import {
+ 	createSinkSchema,
+@@ -64,6 +66,7 @@ app.post(&quot;/events&quot;, async (c) =&gt; {
+ 		);
+ 	}
+ 	const event = await createEvent(parsed.data);
++	log(&quot;event.ingested&quot;, { event_id: event.id, type: event.type });
+ 	const deliveryCount = await fanOut(event);
+ 	return c.json({ event, deliveryCount }, 202);
+ });
+@@ -133,4 +136,12 @@ app.delete(&quot;/endpoints/:id&quot;, async (c) =&gt; {
+ 	return c.body(null, 204);
+ });
+ 
+-// TODO (PLAN step 5): GET /status (computed-on-read metrics snapshot).
++/**
++ * Metrics snapshot, computed on-read from the tables (no parallel counters).
++ * Simple aggregations are real; windowed/statistical metrics are stubbed
++ * placeholders (see src/store/metrics.ts) so this always returns 200 with a
++ * complete shape. The `webhooks status` CLI renders this.
++ */
++app.get(&quot;/status&quot;, async (c) =&gt; {
++	return c.json(await getStatusSnapshot());
++});
+diff --git a/src/testing/bootstrap.ts b/src/testing/bootstrap.ts
+index ced3515..a290c84 100644
+--- a/src/testing/bootstrap.ts
++++ b/src/testing/bootstrap.ts
+@@ -54,6 +54,7 @@ export async function startTestDaemon(): Promise&lt;TestDaemon&gt; {
+ 	process.env.VISIBILITY_TIMEOUT_MS = &quot;1000&quot;;
+ 	process.env.SINK_SLOW_DELAY_MS = &quot;300&quot;; // &#x27;slow&#x27; sink stalls past the timeout
+ 	process.env.REQUEST_TIMEOUT_MS = &quot;100&quot;; // so the &#x27;slow&#x27; sink trips a timeout
++	process.env.LOG_LEVEL = &quot;silent&quot;; // don&#x27;t flood `bun test`/harness with JSON log lines
+ 
+ 	// 2. Dynamic-import the modules that snapshot config at import time. Importing
+ 	//    fresh per-call isn&#x27;t needed (the module graph is process-wide), but env is
+diff --git a/src/worker.ts b/src/worker.ts
+index 462473a..350c86a 100644
+--- a/src/worker.ts
++++ b/src/worker.ts
+@@ -11,6 +11,7 @@
+ import { classifyResult, computeBackoffMs, shouldRetry } from &quot;./classifier&quot;;
+ import { config } from &quot;./config&quot;;
+ import { buildEnvelope, deliverOne } from &quot;./delivery&quot;;
++import { log } from &quot;./log&quot;;
+ import { recordAttempt } from &quot;./store/attempts&quot;;
+ import {
+ 	cancelDeliveriesForEndpoint,
+@@ -42,11 +43,18 @@ async function processDelivery(delivery: Delivery): Promise&lt;void&gt; {
+ 		return;
+ 	}
+ 
++	const attemptNumber = delivery.attemptCount + 1;
+ 	const envelope = buildEnvelope(event);
++	log(&quot;attempt.started&quot;, {
++		delivery_id: delivery.id,
++		event_id: delivery.eventId,
++		endpoint_id: delivery.endpointId,
++		attempt_number: attemptNumber,
++	});
+ 	const result = await deliverOne(endpoint, envelope);
+ 	await recordAttempt({
+ 		deliveryId: delivery.id,
+-		attemptNumber: delivery.attemptCount + 1,
++		attemptNumber,
+ 		statusCode: result.statusCode,
+ 		responseBody: result.responseBody,
+ 		error: result.error,
+@@ -55,25 +63,45 @@ async function processDelivery(delivery: Delivery): Promise&lt;void&gt; {
+ 
+ 	const outcome = classifyResult(result);
+ 
++	const attemptResultFields = {
++		delivery_id: delivery.id,
++		event_id: delivery.eventId,
++		endpoint_id: delivery.endpointId,
++		attempt_number: attemptNumber,
++		status_code: result.statusCode,
++		duration_ms: result.durationMs,
++	};
++
+ 	switch (outcome.action) {
+ 		case &quot;delivered&quot;:
++			log(&quot;attempt.succeeded&quot;, attemptResultFields);
+ 			await markDelivered(delivery.id);
+ 			break;
+ 		case &quot;failed&quot;:
++			log(&quot;attempt.failed&quot;, attemptResultFields);
+ 			await markFailed(delivery.id);
+ 			break;
+ 		case &quot;gone&quot;:
++			log(&quot;attempt.failed&quot;, attemptResultFields);
+ 			await markFailed(delivery.id);
+ 			await disableEndpoint(delivery.endpointId);
++			log(&quot;endpoint.disabled&quot;, { endpoint_id: delivery.endpointId });
+ 			await cancelDeliveriesForEndpoint(delivery.endpointId);
+ 			break;
+ 		case &quot;retry&quot;:
++			log(&quot;attempt.failed&quot;, attemptResultFields);
+ 			if (shouldRetry(delivery.attemptCount, outcome)) {
+ 				const delayMs =
+ 					outcome.retryAfterMs ?? computeBackoffMs(delivery.attemptCount + 1);
+ 				const nextAttemptAt = new Date(Date.now() + delayMs).toISOString();
+ 				await rescheduleDelivery(delivery.id, nextAttemptAt);
+ 			} else {
++				log(&quot;delivery.exhausted&quot;, {
++					delivery_id: delivery.id,
++					event_id: delivery.eventId,
++					endpoint_id: delivery.endpointId,
++					attempt_number: attemptNumber,
++				});
+ 				await markFailed(delivery.id);
+ 			}
+ 			break;</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-22-708Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-22-708Z" class="timestamp-link"><time datetime="2026-06-18T01:03:22.708Z" data-timestamp="2026-06-18T01:03:22.708Z">2026-06-18T01:03:22.708Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-23-235Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-23-235Z" class="timestamp-link"><time datetime="2026-06-18T01:03:23.235Z" data-timestamp="2026-06-18T01:03:23.235Z">2026-06-18T01:03:23.235Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Call sites are correct and engine-safe (pure <code>log()</code> side-effects + a clean <code>attemptNumber</code> hoist). Now the type and CLI:</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-24-241Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-24-241Z" class="timestamp-link"><time datetime="2026-06-18T01:03:24.241Z" data-timestamp="2026-06-18T01:03:24.241Z">2026-06-18T01:03:24.241Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01VtezCs5xtZdev9CzjLcGzg">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Show StatusSnapshot type and CLI</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">git show b7cc35e -- src/types.ts | sed -n &#39;1,80p&#39; &amp;&amp; echo &#34;=== CLI ===&#34; &amp;&amp; cat src/cli/index.ts</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-03-24-337Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-03-24-337Z" class="timestamp-link"><time datetime="2026-06-18T01:03:24.337Z" data-timestamp="2026-06-18T01:03:24.337Z">2026-06-18T01:03:24.337Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>commit b7cc35e02b8c85ced29a5cd800b9028b97a21adf
+Author: Nico Baier &lt;nico.baier@gmail.com&gt;
+Date:   Wed Jun 17 20:00:46 2026 -0500
+
+    feat(observability): scaffold /status, status CLI, JSON-lines logs (PLAN step 5)
+    
+    Implement the mechanical observability surface; stub the windowed/statistical
+    metric math + polished CLI rendering for the human (clearly marked TODOs).
+    
+    - src/log.ts: tiny structured logger; one JSON line per event, silenceable via
+      config.logLevel.
+    - log call sites: event.ingested (server), delivery.created (fanout),
+      attempt.started/succeeded/failed + delivery.exhausted + endpoint.disabled
+      (worker). Correlatable by delivery_id/event_id.
+    - src/store/metrics.ts: on-read aggregations (delivery status counts, endpoint
+      state counts, in-backoff, event count) + getStatusSnapshot. Windowed metrics
+      (throughput/successRate/latency p50-p95/attemptsToSuccess) stubbed as typed
+      placeholders so GET /status stays 200.
+    - GET /status route + StatusSnapshot type (full shape).
+    - src/cli/index.ts: `webhooks status` thin HTTP client (--url or
+      config.publicBaseUrl); basic render, polish left as TODO. package.json status script.
+    - config.logLevel (LOG_LEVEL, default &quot;info&quot;; &quot;silent&quot; suppresses); test
+      bootstrap sets LOG_LEVEL=silent.
+    - /status smoke test (200 + consistent counts); advanced-metric tests as test.todo.
+    
+    Co-Authored-By: Claude Opus 4.8 &lt;noreply@anthropic.com&gt;
+
+diff --git a/src/types.ts b/src/types.ts
+index 9bc7d3e..d8da84b 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -92,6 +92,63 @@ export interface Attempt {
+ 	createdAt: string;
+ }
+ 
++/**
++ * The metrics snapshot returned by `GET /status`, computed on-read from the
++ * tables (no parallel counters — see PLAN step 5 / the on-read constraint).
++ *
++ * Split into &quot;simple&quot; aggregations (implemented) and &quot;windowed/statistical&quot;
++ * metrics (stubbed for the human — they involve real decisions about window
++ * bounds, p95 with small N, etc.). Stubbed fields return typed placeholders so
++ * the endpoint always responds 200 with a complete shape.
++ */
++export interface StatusSnapshot {
++	/** When this snapshot was computed (ISO 8601). */
++	generatedAt: string;
++
++	/** Rolling window (ms) the windowed metrics below are computed over. */
++	windowMs: number;
++
++	/** Deliveries grouped by status, plus the overall total. */
++	deliveries: {
++		pending: number;
++		processing: number;
++		delivered: number;
++		failed: number;
++		canceled: number;
++		total: number;
++	};
++
++	/** Endpoints grouped by lifecycle state. */
++	endpoints: {
++		active: number;
++		disabled: number;
++		deleted: number;
++		total: number;
++	};
++
++	/** `pending` Deliveries whose next_attempt_at is in the future (waiting out backoff). */
++	inBackoff: number;
++
++	/** Total Events ingested. */
++	events: number;
++
++	/**
++	 * Windowed / statistical metrics — STUBBED for the human. Each is a typed
++	 * placeholder (null/0/[]) today; getStatusSnapshot still wires them in so the
++	 * shape is complete. See src/store/metrics.ts for the exact TODOs.
++	 */
+=== CLI ===
+#!/usr/bin/env bun
+/**
+ * `webhooks` CLI — a THIN client over the daemon&#x27;s HTTP API. It never touches the
+ * store/DB directly (ADR 0002): the daemon owns the database; the CLI just calls
+ * its endpoints. Right now it implements one command: `status`.
+ *
+ * Usage:
+ *   bun run src/cli/index.ts status [--url http://localhost:3000]
+ *
+ * Base URL resolution: --url flag &gt; config.publicBaseUrl (PORT/PUBLIC_BASE_URL).
+ */
+
+import { config } from &quot;../config&quot;;
+import type { StatusSnapshot } from &quot;../types&quot;;
+
+/** Pull `--url &lt;value&gt;` out of argv; fall back to the configured base URL. */
+function resolveBaseUrl(args: string[]): string {
+	const i = args.indexOf(&quot;--url&quot;);
+	if (i !== -1 &amp;&amp; args[i + 1]) return args[i + 1] as string;
+	return config.publicBaseUrl;
+}
+
+async function fetchStatus(baseUrl: string): Promise&lt;StatusSnapshot&gt; {
+	const res = await fetch(`${baseUrl}/status`);
+
+	if (!res.ok) {
+		throw new Error(`GET ${baseUrl}/status → HTTP ${res.status}`);
+	}
+	return (await res.json()) as StatusSnapshot;
+}
+
+/**
+ * Basic, readable dump of the snapshot. Intentionally plain.
+ *
+ * TODO (yours): nicer formatting — aligned columns / sections / color, a compact
+ * one-line summary, and a `--watch` live view (PLAN stretch goal). The CLI is
+ * where the observability UX polish lives now that there&#x27;s no dashboard (ADR 0002),
+ * so make this tasteful rather than a raw dump.
+ */
+function renderStatus(s: StatusSnapshot): string {
+	const lines: string[] = [];
+	lines.push(`webhook-delivery status  (${s.generatedAt})`);
+	lines.push(&quot;&quot;);
+	lines.push(&quot;Deliveries:&quot;);
+	lines.push(`  pending    ${s.deliveries.pending}`);
+	lines.push(`  processing ${s.deliveries.processing}`);
+	lines.push(`  delivered  ${s.deliveries.delivered}`);
+	lines.push(`  failed     ${s.deliveries.failed}`);
+	lines.push(`  canceled   ${s.deliveries.canceled}`);
+	lines.push(`  total      ${s.deliveries.total}`);
+	lines.push(&quot;&quot;);
+	lines.push(&quot;Endpoints:&quot;);
+	lines.push(`  active   ${s.endpoints.active}`);
+	lines.push(`  disabled ${s.endpoints.disabled}`);
+	lines.push(`  deleted  ${s.endpoints.deleted}`);
+	lines.push(`  total    ${s.endpoints.total}`);
+	lines.push(&quot;&quot;);
+	lines.push(`In backoff: ${s.inBackoff}`);
+	lines.push(`Events:     ${s.events}`);
+	lines.push(&quot;&quot;);
+	lines.push(
+		`Windowed (last ${Math.round(s.windowMs / 1000)}s) [partial — TODO]:`,
+	);
+	lines.push(`  throughput         ${s.windowed.throughput}`);
+	lines.push(`  success rate       ${s.windowed.successRate ?? &quot;n/a&quot;}`);
+	lines.push(
+		`  latency p50/p95    ${s.windowed.latencyMs.p50 ?? &quot;n/a&quot;} / ${s.windowed.latencyMs.p95 ?? &quot;n/a&quot;} ms`,
+	);
+	lines.push(
+		`  attempts-to-success avg ${s.windowed.attemptsToSuccess.avg ?? &quot;n/a&quot;}`,
+	);
+	return lines.join(&quot;\n&quot;);
+}
+
+async function main(): Promise&lt;void&gt; {
+	const [command, ...rest] = process.argv.slice(2);
+
+	switch (command) {
+		case &quot;status&quot;: {
+			const baseUrl = resolveBaseUrl(rest);
+			const snapshot = await fetchStatus(baseUrl);
+			console.log(renderStatus(snapshot));
+			break;
+		}
+		default:
+			console.error(`Unknown command: ${command ?? &quot;(none)&quot;}`);
+			console.error(&quot;Usage: webhooks status [--url &lt;baseUrl&gt;]&quot;);
+			process.exit(1);
+	}
+}
+
+main().catch((err) =&gt; {
+	console.error(String(err));
+	process.exit(1);
+});</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-36-886Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-36-886Z" class="timestamp-link"><time datetime="2026-06-18T01:03:36.886Z" data-timestamp="2026-06-18T01:03:36.886Z">2026-06-18T01:03:36.886Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-37-350Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-37-350Z" class="timestamp-link"><time datetime="2026-06-18T01:03:37.350Z" data-timestamp="2026-06-18T01:03:37.350Z">2026-06-18T01:03:37.350Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Excellent quality throughout. Let me confirm it's green and exercise <code>/status</code> + the CLI against a live daemon.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-03-44-169Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-03-44-169Z" class="timestamp-link"><time datetime="2026-06-18T01:03:44.169Z" data-timestamp="2026-06-18T01:03:44.169Z">2026-06-18T01:03:44.169Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01YaRkbrLArsLaFYDm7up6bY">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Typecheck, test, and exercise /status + CLI live</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">bunx tsc --noEmit &amp;&amp; echo &#34;tsc OK&#34; &amp;&amp; echo &#34;=== bun test ===&#34; &amp;&amp; bun test 2&gt;&amp;1 | tail -6
+echo &#34;=== /status + CLI live ===&#34; 
+PORT=3998 DATABASE_URL=&#34;file:./tmp-status.db&#34; bun -e &#39;
+import { migrate } from &#34;./src/db/migrate&#34;;
+import { app } from &#34;./src/server&#34;;
+await migrate();
+const server = Bun.serve({ port: 3998, fetch: app.fetch });
+// seed a delivered + a sink endpoint
+await fetch(&#34;http://localhost:3998/sinks&#34;,{method:&#34;POST&#34;,headers:{&#34;content-type&#34;:&#34;application/json&#34;},body:JSON.stringify({behavior:&#34;always-200&#34;})});
+await fetch(&#34;http://localhost:3998/events&#34;,{method:&#34;POST&#34;,headers:{&#34;content-type&#34;:&#34;application/json&#34;},body:JSON.stringify({type:&#34;order.created&#34;,data:{a:1}})});
+await new Promise(r=&gt;setTimeout(r,400));
+const s = await (await fetch(&#34;http://localhost:3998/status&#34;)).json();
+console.log(&#34;status keys:&#34;, Object.keys(s).join(&#34;,&#34;));
+console.log(&#34;deliveries:&#34;, JSON.stringify(s.deliveries), &#34;endpoints:&#34;, JSON.stringify(s.endpoints), &#34;events:&#34;, s.events, &#34;windowed.successRate:&#34;, s.windowed.successRate);
+server.stop(true);
+&#39; 2&gt;&amp;1
+echo &#34;=== CLI render ===&#34;
+PORT=3997 DATABASE_URL=&#34;file:./tmp-cli.db&#34; bun -e &#39;
+import { migrate } from &#34;./src/db/migrate&#34;;
+import { app } from &#34;./src/server&#34;;
+await migrate();
+const server = Bun.serve({ port: 3997, fetch: app.fetch });
+const { $ } = await import(&#34;bun&#34;);
+await $`bun run src/cli/index.ts status --url http://localhost:3997`;
+server.stop(true);
+&#39; 2&gt;&amp;1
+rm -f tmp-status.db* tmp-cli.db*</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-18T01-05-45-607Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-18T01-05-45-607Z" class="timestamp-link"><time datetime="2026-06-18T01:05:45.607Z" data-timestamp="2026-06-18T01:05:45.607Z">2026-06-18T01:05:45.607Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>tsc OK
+=== bun test ===
+
+ 8 pass
+ 4 todo
+ 0 fail
+ 55 expect() calls
+Ran 12 tests across 1 file. [708.00ms]
+=== /status + CLI live ===
+{&quot;ts&quot;:&quot;2026-06-18T01:05:45.104Z&quot;,&quot;event&quot;:&quot;event.ingested&quot;,&quot;event_id&quot;:&quot;evt_7c611321-a3db-4d47-bf12-3f00f8c3b95b&quot;,&quot;type&quot;:&quot;order.created&quot;}
+{&quot;ts&quot;:&quot;2026-06-18T01:05:45.105Z&quot;,&quot;event&quot;:&quot;delivery.created&quot;,&quot;delivery_id&quot;:&quot;dlv_2e1261c5-8996-4aa4-9425-639eb45a8dce&quot;,&quot;event_id&quot;:&quot;evt_7c611321-a3db-4d47-bf12-3f00f8c3b95b&quot;,&quot;endpoint_id&quot;:&quot;ep_4c2b93f7-8598-4eb0-9773-949a7bf4c99e&quot;}
+status keys: generatedAt,windowMs,deliveries,endpoints,inBackoff,events,windowed
+deliveries: {&quot;pending&quot;:1,&quot;processing&quot;:0,&quot;delivered&quot;:0,&quot;failed&quot;:0,&quot;canceled&quot;:0,&quot;total&quot;:1} endpoints: {&quot;active&quot;:1,&quot;disabled&quot;:0,&quot;deleted&quot;:0,&quot;total&quot;:1} events: 1 windowed.successRate: null
+=== CLI render ===
+webhook-delivery status  (2026-06-18T01:05:45.593Z)
+
+Deliveries:
+  pending    0
+  processing 0
+  delivered  0
+  failed     0
+  canceled   0
+  total      0
+
+Endpoints:
+  active   0
+  disabled 0
+  deleted  0
+  total    0
+
+In backoff: 0
+Events:     0
+
+Windowed (last 300s) [partial — TODO]:
+  throughput         0
+  success rate       n/a
+  latency p50/p95    n/a / n/a ms
+  attempts-to-success avg n/a</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-06-05-234Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-06-05-234Z" class="timestamp-link"><time datetime="2026-06-18T01:06:05.234Z" data-timestamp="2026-06-18T01:06:05.234Z">2026-06-18T01:06:05.234Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-18T01-06-15-693Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-18T01-06-15-693Z" class="timestamp-link"><time datetime="2026-06-18T01:06:15.693Z" data-timestamp="2026-06-18T01:06:15.693Z">2026-06-18T01:06:15.693Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Quick look done — this scaffold is clean and faithful to the brief. Verified live, not just by eye:</p>
+<ul>
+<li><code>tsc</code> clean; <code>bun test</code> → <strong>8 pass / 4 todo / 0 fail</strong> (the new <code>/status</code> smoke test passes; the 4 windowed-metric tests are <code>test.todo</code>).</li>
+<li><code>GET /status</code> returns the full shape with correct on-read counts (1 pending delivery, 1 active endpoint, 1 event), and stubbed windowed metrics come back as typed placeholders (<code>successRate: null</code>) — so the endpoint is 200/demoable as intended.</li>
+<li>The JSON-line logs fire correctly (<code>event.ingested</code>, <code>delivery.created</code> with correlatable ids) at default <code>info</code>, and the test bootstrap sets <code>LOG_LEVEL=silent</code> so the suite isn't flooded.</li>
+<li>The CLI renders cleanly and is a thin HTTP client (<code>--url</code> → <code>config.publicBaseUrl</code> fallback), with polish left as a clear TODO.</li>
+</ul>
+<p><strong>What's implemented vs left for you:</strong>
+- ✅ Logger, all six log call sites (engine edits are pure <code>log()</code> insertions + a tidy <code>attemptNumber</code> hoist — no behavior change), simple metrics (<code>deliveryStatusCounts</code>/<code>endpointStateCounts</code>/<code>inBackoffCount</code>/<code>eventCount</code>), <code>GET /status</code>, <code>StatusSnapshot</code> type, CLI <code>status</code>, config knob, bootstrap silence.
+- 🔧 Yours: the four windowed/statistical functions in <code>store/metrics.ts</code> (throughput, successRate, latency p50/p95, attemptsToSuccess) — each a typed placeholder with an exact-computation TODO — plus the polished CLI rendering (and the <code>--watch</code> stretch).</p>
+<p>Two tiny notes, neither blocking:
+- The worker logs <strong>both</strong> <code>attempt.failed</code> and <code>delivery.exhausted</code> on the final exhausted attempt. Defensible (per-try vs terminal milestone), just know it's intentional double-logging on that one transition.
+- <code>deliveryStatusCounts</code> assigns <code>counts[status] = n</code> straight from the row — fine since statuses are app-constrained, just not defensive against an unexpected value (there's no DB CHECK constraint). Negligible.</p>
+<p>You're clear to implement the four metric functions + CLI polish. When you've done them, send the diff and I'll review the percentile/window math specifically (small-N p95 behavior and the window-anchor choice are the easy places to get subtly wrong).</p></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-012.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-009.html">9</a>
+<a href="page-010.html">10</a>
+<a href="page-011.html">11</a>
+<a href="page-012.html">12</a>
+<span class="current">13</span>
+<a href="page-014.html">14</a>
+<a href="page-015.html">15</a>
+<a href="page-014.html">Next &rarr;</a>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

@@ -1,10 +1,6 @@
 # Webhook Delivery Service
 
-> A small, single-process webhook delivery service: register endpoints, ingest
-> events, fan out, and deliver reliably with retries, signing, and observability.
->
-> _TODO: 2–3 sentence framing in your own voice — what it is, what you chose to
-> emphasize, and the headline (at-least-once delivery + a programmable test harness)._
+A single process webhook delivery service allowing users to register webhook endpoints, ingest events, deliver reliably with retries, HMAC signing and observability built in. The repo includes a harness that demonstrates a range of scenarios, including event type driven routing and success-after-failure scenarios.
 
 ---
 
@@ -12,13 +8,13 @@
 
 - **Requirements:** [Bun](https://bun.sh) (`curl -fsSL https://bun.sh/install | bash`). No other infra.
 - Install: `bun install`
+- Run the test suite: `bun test`
 - Run the daemon: `bun run dev` (API + worker, one process, on `:3000`)
    - or `bun run demo` for snappy retry timing (good for live demos)
-- Run the test suite: `bun test`
-- Drive a scenario (needs a daemon running): `bun run harness <scenario>`
+- Use the demo harness to run a scenario (daemon must be running): `bun run harness <scenario>` (omit the name for an interactive menu)
 - See system health: `bun run status`
 
-Golden path (two terminals):
+Both `harness` and `status` require the HTTP server to be running.
 
 ```bash
 # terminal 1 — start the daemon (snappy timing for a live demo)
@@ -46,14 +42,38 @@ bun run status
 
 ## Architecture (one paragraph + diagram)
 
-- One Bun process = Hono HTTP API + an in-process polling **worker**, over a single
-  SQLite file (`@libsql/client`).
-- Flow: `POST /events` → validate → persist Event → **fan out** one Delivery per
-  matching Endpoint → worker **claims** due Deliveries → POSTs signed envelope →
-  records an Attempt → marks delivered / reschedules / fails.
-- _TODO: small ASCII flow diagram (event → deliveries → worker → endpoint)._
-- Key design docs: [`CONTEXT.md`](./CONTEXT.md) (glossary),
-  [`docs/adr/`](./docs/adr/) (decisions), [`PLAN.md`](./PLAN.md) (build log).
+One Bun process runs a Hono HTTP API and an in-process polling worker over a single
+SQLite file (`@libsql/client`).
+
+The flow is shown below: `POST /events` → validate → persist Event →
+**fan out** one Delivery per matching Endpoint → worker **claims** due Deliveries →
+POSTs a signed envelope → records an Attempt → marks delivered / reschedules / fails.
+
+```
+  POST /events                         worker tick (poll)
+       │                                      │
+       ▼                                      ▼
+  ┌─────────┐  fan-out (routing locked   ┌──────────────────┐   atomic claim
+  │  Event  │  at ingest, 1 per EP) ────▶│    Deliveries    │─────────────────┐
+  └─────────┘                            │ pending/backoff  │                 │
+                                         └──────────────────┘                 ▼
+                                                                  ┌────────────┐
+                                                                  │   Attempt  │
+                                                                  │ HMAC POST  │
+                                                                  └─────┬──────┘
+                                                                        │
+       ╭───╮                                                            ▼
+       │   │  events in                                          ┌───────────┐
+       ╰─╥─╯                                                     │ Endpoint  │
+         ║                                                       │ or Sink   │
+         ╚══════════════════════════════════════════════════════▶└───────────┘
+```
+
+More information can be found in the following design docs:
+
+- [`CONTEXT.md`](./CONTEXT.md) (glossary)
+- [`docs/adr/`](./docs/adr/) (decisions)
+- [`PLAN.md`](./PLAN.md) (build log)
 
 ### Data model (4 + 1 tables)
 
@@ -71,18 +91,32 @@ bun run status
 
 ## Design decisions (the interesting choices)
 
-- **SQLite as the delivery queue** (no Redis/broker). Why: single binary, fully
-  persistent, backoff = a `next_attempt_at` timestamp. See [ADR 0001](./docs/adr/0001-sqlite-as-delivery-queue.md).
-   - Atomic claim with a `processing` state + **visibility-timeout reclaim** so a
-     crash mid-flight doesn't strand a Delivery.
+- **SQLite as the delivery queue** (no Redis/broker). Why: SQLite is a single binary and fully
+  persistent. See [ADR 0001](./docs/adr/0001-sqlite-as-delivery-queue.md).
 - **CLI + harness over the HTTP API; no web dashboard.** Why: focus the time on the
   delivery engine; observability lives in `status` + logs. See [ADR 0002](./docs/adr/0002-cli-over-http-api-no-dashboard.md).
-- **Delivery guarantee: at-least-once.** Each Attempt carries a stable
-  `X-Webhook-Id` so consumers can dedup (approximating exactly-once). _TODO: expand._
-- **Typed routing.** Endpoints subscribe to a flat list of event types (`["*"]` =
-  all); routing is **frozen at fan-out time**. _TODO: note fixed enum + future work._
-- **Endpoint lifecycle:** soft-delete + a distinct `disabled` state; in-flight
-  Deliveries become `canceled` (not `failed`). _TODO: expand the 3 scenarios._
+- **Delivery guarantee: at-least-once.** A Delivery stays eligible until it reaches a
+  terminal state (`delivered`, `failed`, or `canceled`). Transient errors reschedule
+  with backoff; a crash mid-Attempt leaves the row in `processing` until the
+  visibility timeout reclaims it for another try. That means a consumer may see the
+  same Event more than once — each Attempt sends `X-Webhook-Id` (the Event id,
+  stable across retries) so receivers can dedupe and approximate exactly-once
+  processing on their side.
+- **Typed routing.** Event types are a fixed enum (`order.created`, `order.updated`,
+  `order.deleted`, `payment.succeeded`, `payment.failed`). Endpoints subscribe to a
+  flat list of those types, or `["*"]` for all — mixing `*` with specific types is
+  rejected. Routing is **frozen at fan-out time**: once a Delivery exists, later
+  subscription edits do not affect it. Future work: dynamic/registrable event types.
+- **Endpoint lifecycle:** three paths to stop delivery without marking it "failed":
+   1. **410 Gone** — the classifier treats this as permanent: the Delivery fails, the
+      Endpoint flips to `disabled`, and any other queued Deliveries for that Endpoint
+      are `canceled`. New events no longer fan out to it (`gone-disables` scenario).
+   2. **Soft-delete** — `DELETE /endpoints/:id` sets `deleted_at` and cancels queued
+      Deliveries. Rows stay for the audit trail (`delete-cancels` scenario).
+   3. **Disabled vs deleted** — `disabled` is system-triggered (today: 410) and
+      reversible; `deleted` is operator-initiated and terminal for that Endpoint.
+      In both cases, in-flight work becomes `canceled`, not `failed` — nothing was
+      wrong with the Delivery itself, the destination went away.
 
 ### Retry policy
 
@@ -108,6 +142,28 @@ function verify(rawBody: string, headers: Headers, secret: string): boolean {
    const a = Buffer.from(got);
    const b = Buffer.from(want);
    return a.length === b.length && timingSafeEqual(a, b);
+}
+```
+
+### Outbound delivery envelope
+
+Each Attempt POSTs JSON to the Endpoint URL with these headers:
+
+| Header                | Value                                                    |
+| --------------------- | -------------------------------------------------------- |
+| `Content-Type`        | `application/json`                                       |
+| `X-Webhook-Id`        | Event id (stable dedup key across retries)               |
+| `X-Webhook-Timestamp` | ISO-8601 timestamp included in the signature             |
+| `X-Webhook-Signature` | `sha256=<hex>` HMAC over `` `${timestamp}.${rawBody}` `` |
+
+Body shape:
+
+```json
+{
+   "id": "evt_<uuid>",
+   "type": "order.created",
+   "created_at": "2026-06-17T12:00:00.000Z",
+   "data": { "orderId": "ord_1", "total": 42 }
 }
 ```
 
@@ -168,11 +224,24 @@ curl -s localhost:3000/status
 
 - The harness drives the **running daemon** over HTTP (so data persists and shows
   in `status`). `bun run harness` (menu) or `bun run harness <name>`.
-- **Sinks** are programmable in-process receivers: `always-200`, `always-500`,
-  `410-gone`, `slow`, `fail-then-recover`, `verify-signature`.
+- **Sinks** are programmable in-process receivers registered as Endpoints pointing
+  at `POST /_sink/:id`:
+
+| Behavior            | What it does                                          |
+| ------------------- | ----------------------------------------------------- |
+| `always-200`        | Immediate success                                     |
+| `always-500`        | Permanent transient failure (retries until exhausted) |
+| `fail-then-recover` | Returns 500 for the first N hits, then 200            |
+| `410-gone`          | Permanent failure; disables the Endpoint              |
+| `slow`              | Sleeps past the request timeout                       |
+| `verify-signature`  | Recomputes the HMAC; returns 401 on mismatch          |
+
 - Scenarios (each prints a delivery/attempt timeline + summary):
   `happy-path`, `retry-recovery`, `permanent-failure`, `gone-disables`,
   `delete-cancels`, `signature-verified`, `routing`.
+
+   \_todo a table here with what the scenarios do
+
 - `bun test` mirrors the scenarios 1:1 but **asserts** (scenarios print, tests
   assert; shared setup). Tests use an isolated temp daemon; the harness uses the
   real one.
@@ -195,7 +264,7 @@ retry-recovery: transient 500s, then delivered
       #4  HTTP 200  (3.3ms)
   summary: delivered=1
 
-✓ retry-recovery complete  —  run `webhooks status` to see the metrics
+✓ retry-recovery complete  —  run `bun run status` to see the metrics
 ```
 
 ---
@@ -234,17 +303,49 @@ Deliveries            Endpoints
 - **Future work:** idempotency key on ingest, dynamic event types, separate worker
   process / real broker for horizontal scaling, broader auto-disable. See
   [`PLAN.md`](./PLAN.md).
-- _TODO: 2–3 lines on what you'd do next with more time, and any known limitations._
+- **With more time:** `webhooks status --watch` (live queue view), latency p50/p95
+  and attempts-to-success from the `attempts` table (data is already stored),
+  inbound API auth, and manual re-trigger of exhausted Deliveries.
+- **Known limitations:** single writer process (SQLite throughput cap), fixed event
+  type enum, open HTTP API (no auth — fine for a local exercise, not production).
 
 ---
 
 ## LLM-assisted development
 
-- _TODO: link/attach the session transcript(s)._
-- _TODO: a few sentences on how you used the LLM — design grilling
-  (CONTEXT.md/ADRs came out of it), scaffold-then-review loop, adversarial code
-  review of generated code (e.g. it caught the HMAC-signed-wrong-bytes bug and the
-  cancel race), and where you drove vs. delegated._
+This project was built in collaboration with Claude Code, predominantly in a single thread. I also used Cursor Tab completions and Cursor selection editing in some places.
+
+My process with Claude was the following:
+
+1. I read the assignment and do some early brainstorming in [`docs/brainstorming.md`](./docs/brainstorming.md).
+2. I used an agent skill, `/grill-with-docs` (see below) to have Claude Code interview me on what I wanted to build, with reference to the assignment and brainstorming doc.
+3. I then worked with Claude in a **scaffold-then-implement** loop: an agent stubs mechanical plumbing and leaves `// TODO (yours)` markers on the interesting bits; a human implements those interesting bit, and the agent and the human review the result. See the handoff notes in [`docs/handoff-*.md`](./docs/)
+
+Some more specific notes on the process:
+
+- **Design grilling** — back-and-forth on naming and guarantees produced
+  [`CONTEXT.md`](./CONTEXT.md) (domain glossary) and the ADRs (SQLite-as-queue,
+  CLI-over-API). [`PLAN.md`](./PLAN.md) is the ordered build log.
+- **Where the human drove** — architecture calls (no dashboard, SQLite queue,
+  at-least-once semantics, signature contract), implementing the worker/classifier/
+  store layer, and deciding what to descope.
+- **Where the LLM helped** — scaffolding harness scenarios, sink behaviors, metrics
+  queries, and test setup; generating the initial Hono routes and Zod schemas.
+- **Adversarial review** — a review pass by the agent caught real bugs before they shipped: the
+  HMAC was initially signed over the wrong bytes (body alone instead of
+  `` `${timestamp}.${body}` ``), and a cancel race could overwrite a `processing`
+  Delivery after soft-delete.
+
+I've included transcripts for the three sessions used to build this project in the `transcripts` directory. I used Simon Wilison's [claude-code-transcripts](https://github.com/simonw/claude-code-transcripts) tool. The transcripts are:
+
+1. [`1_main-thread`](./transcripts/1_main-thread/index.html): the main thread where I did the vast majority the LLM assisted coding.2.
+2. [`2_step-4-handoff`](.transcripts/2_step-4-handoff/index.html): the thread where an agent scaffolded the code for step 4 of the [plan](./PLAN.md).
+3. [`3_step-5-handoff`](.transcripts/3_step-5-handoff/index.html): the thread where an agent scaffolded the code for step 5 of the [plan](./PLAN.md).
+
+I used two agent skills from [mattpocock/skills](https://github.com/mattpocock/skills) to help me during the project:
+
+- `/grill-with-docs`: Initiates an interview that also helps builds the project's domain model, sharpening terminology and updating CONTEXT.md and ADRs inline.
+- `/handoff`: Compacts the current conversation into a handoff document so another agent can continue the work
 
 ---
 
