@@ -1,3 +1,14 @@
+import { config } from "./config";
+
+/** `--url <value>` from argv, else the configured base URL. */
+export function resolveBaseUrl(argv: string[]): string {
+	const i = argv.indexOf("--url");
+	if (i !== -1 && argv[i + 1]) return argv[i + 1] as string;
+	return config.publicBaseUrl;
+}
+
+export type LogFields = Record<string, unknown>;
+
 /**
  * Tiny structured logger. Every lifecycle event is one JSON object per line on
  * stdout: `{ ts, event, ...fields }`. Fields are kept flat and snake_case to
@@ -11,12 +22,6 @@
  *
  * Do NOT pass secrets (Endpoint `secret`, computed signatures) as fields.
  */
-
-import { config } from "./config";
-
-export type LogFields = Record<string, unknown>;
-
-/** Emit one JSON line for `event` with optional flat `fields`. No-op when silent. */
 export function log(event: string, fields: LogFields = {}): void {
 	if (config.logLevel === "silent") return;
 	const line = { ts: new Date().toISOString(), event, ...fields };

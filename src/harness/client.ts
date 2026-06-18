@@ -37,19 +37,6 @@ async function json<T>(res: Response): Promise<T> {
 	return (await res.json()) as T;
 }
 
-/** Register an Endpoint pointing at an arbitrary external URL. */
-export async function registerEndpoint(
-	baseUrl: string,
-	input: { url: string; eventTypes: EventTypeSubscription },
-): Promise<Endpoint> {
-	const res = await fetch(`${baseUrl}/endpoints`, {
-		method: "POST",
-		headers: { "content-type": "application/json" },
-		body: JSON.stringify(input),
-	});
-	return json<Endpoint>(res);
-}
-
 /** List all (non-deleted) Endpoints. */
 export async function listEndpoints(baseUrl: string): Promise<Endpoint[]> {
 	return json<Endpoint[]>(await fetch(`${baseUrl}/endpoints`));
@@ -163,5 +150,3 @@ export async function waitForSettled(
 		await new Promise((r) => setTimeout(r, pollMs));
 	}
 }
-
-export { TERMINAL };

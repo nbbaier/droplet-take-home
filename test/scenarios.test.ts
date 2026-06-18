@@ -22,8 +22,8 @@ import {
 	listEndpoints,
 	waitForSettled,
 } from "../src/harness/client";
-import { startTestDaemon, type TestDaemon } from "../src/testing/bootstrap";
 import type { StatusSnapshot } from "../src/types";
+import { startTestDaemon, type TestDaemon } from "./bootstrap";
 
 const maxAttempts = Number(process.env.MAX_ATTEMPTS ?? 5);
 

@@ -69,7 +69,7 @@ export async function incrementHits(id: string): Promise<number> {
 	return row ? Number(row.hits) : 0;
 }
 
-export async function listSinks(): Promise<Sink[]> {
+async function listSinks(): Promise<Sink[]> {
 	const result = await db.execute(
 		`SELECT * FROM sinks ORDER BY created_at DESC`,
 	);

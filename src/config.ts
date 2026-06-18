@@ -69,5 +69,3 @@ export const config = {
 	 */
 	logLevel: logLevel(),
 } as const;
-
-export type Config = typeof config;

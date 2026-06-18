@@ -60,9 +60,9 @@ export async function startTestDaemon(): Promise<TestDaemon> {
 	// 2. Dynamic-import the modules that snapshot config at import time. Importing
 	//    fresh per-call isn't needed (the module graph is process-wide), but env is
 	//    set before first import, which is what matters.
-	const { app } = await import("../server");
-	const { startWorker, stopWorker } = await import("../worker");
-	const { migrate } = await import("../db/migrate");
+	const { app } = await import("../src/server");
+	const { startWorker, stopWorker } = await import("../src/worker");
+	const { migrate } = await import("../src/db/migrate");
 
 	await migrate();
 

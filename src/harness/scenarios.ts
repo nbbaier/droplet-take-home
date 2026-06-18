@@ -211,27 +211,17 @@ const routing: Scenario = async (baseUrl) => {
 	});
 	console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
 
-	// The sinks are freshly created, so scope to each: order + wildcard should each
-	// get exactly one Delivery; payment.succeeded should get none.
-	const settledOrder = await waitForSettled(baseUrl, {
-		endpointId: orderSink.endpoint.id,
-		expectedCount: 1,
-	});
-	const settledWildcard = await waitForSettled(baseUrl, {
-		endpointId: wildcardSink.endpoint.id,
-		expectedCount: 1,
-	});
-	const paymentDeliveries = await deliveriesFor(
-		baseUrl,
-		paymentSink.endpoint.id,
+	const settled = await waitForSettled(baseUrl, { expectedCount: 2 });
+	const endpointIds = new Set(settled.map((d) => d.endpointId));
+	console.log(
+		`  order.created endpoint (${orderSink.endpoint.id}): ${endpointIds.has(orderSink.endpoint.id) ? "received" : "skipped"}`,
 	);
-
-	const mark = (n: number) => (n > 0 ? "received" : "skipped");
-	console.log(`  order.created  endpoint: ${mark(settledOrder.length)}`);
-	console.log(`  payment.succ.  endpoint: ${mark(paymentDeliveries.length)}`);
-	console.log(`  wildcard       endpoint: ${mark(settledWildcard.length)}`);
-
-	const settled = [...settledOrder, ...settledWildcard];
+	console.log(
+		`  payment.succeeded endpoint (${paymentSink.endpoint.id}): ${endpointIds.has(paymentSink.endpoint.id) ? "received" : "skipped"}`,
+	);
+	console.log(
+		`  wildcard endpoint (${wildcardSink.endpoint.id}): ${endpointIds.has(wildcardSink.endpoint.id) ? "received" : "skipped"}`,
+	);
 	for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
 	printStatusSummary(settled);
 };
@@ -248,4 +238,4 @@ export const scenarios: Record<string, Scenario> = {
 
 export const scenarioNames = Object.keys(scenarios);
 
-export { printDeliveryTimeline, printStatusSummary };
+;

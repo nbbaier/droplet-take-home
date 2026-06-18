@@ -11,7 +11,7 @@ import { Hono } from "hono";
 import { config } from "./config";
 import { fanOut } from "./fanout";
 import { newId } from "./ids";
-import { log } from "./log";
+import { log } from "./shared";
 import { behaviorResponse } from "./sinks";
 import { listAttemptsForDelivery } from "./store/attempts";
 import {

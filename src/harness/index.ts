@@ -13,15 +13,8 @@
  *   bun run dev          # or: bun run demo   (BACKOFF_BASE_MS=200, snappy)
  */
 
-import { config } from "../config";
+import { resolveBaseUrl } from "../shared";
 import { type Scenario, scenarioNames, scenarios } from "./scenarios";
-
-/** `--url <value>` from argv, else the configured base URL. */
-function resolveBaseUrl(argv: string[]): string {
-	const i = argv.indexOf("--url");
-	if (i !== -1 && argv[i + 1]) return argv[i + 1] as string;
-	return config.publicBaseUrl;
-}
 
 /** Positional args (everything that isn't `--url <value>`). */
 function positionals(argv: string[]): string[] {
@@ -60,7 +53,9 @@ async function runScenario(
 	console.log(`\n▶ scenario: ${name}  (daemon @ ${baseUrl})\n`);
 	try {
 		await scenario(baseUrl);
-		console.log(`\n✓ ${name} complete  —  run \`webhooks status\` to see the metrics\n`);
+		console.log(
+			`\n✓ ${name} complete  —  run \`webhooks status\` to see the metrics\n`,
+		);
 	} catch (err) {
 		console.error(
 			`\n✗ ${name} failed: ${err instanceof Error ? err.message : err}\n`,

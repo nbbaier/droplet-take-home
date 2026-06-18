@@ -10,15 +10,8 @@
  * Base URL resolution: --url flag > config.publicBaseUrl (PORT/PUBLIC_BASE_URL).
  */
 
-import { config } from "../config";
+import { resolveBaseUrl } from "../shared";
 import type { StatusSnapshot } from "../types";
-
-/** Pull `--url <value>` out of argv; fall back to the configured base URL. */
-function resolveBaseUrl(args: string[]): string {
-	const i = args.indexOf("--url");
-	if (i !== -1 && args[i + 1]) return args[i + 1] as string;
-	return config.publicBaseUrl;
-}
 
 async function fetchStatus(baseUrl: string): Promise<StatusSnapshot> {
 	const res = await fetch(`${baseUrl}/status`);
@@ -31,10 +24,8 @@ async function fetchStatus(baseUrl: string): Promise<StatusSnapshot> {
 
 // --- formatting helpers --------------------------------------------------
 
-// Color only when writing to a TTY and NO_COLOR isn't set — so piped/redirected
-// output (logs, grep, CI) stays plain. Color is used ONLY in the header/summary
-// lines, never inside the aligned columns, so padding math sees raw widths.
 const useColor = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
+
 const ANSI = {
 	reset: "\x1b[0m",
 	bold: "\x1b[1m",
@@ -43,13 +34,9 @@ const ANSI = {
 	green: "\x1b[32m",
 	yellow: "\x1b[33m",
 } as const;
+
 function paint(code: string, s: string): string {
 	return useColor ? `${code}${s}${ANSI.reset}` : s;
-}
-
-/** ISO → "YYYY-MM-DD HH:MM:SS". */
-function shortTime(iso: string): string {
-	return iso.replace("T", " ").slice(0, 19);
 }
 
 /** A "label   value" line, value right-aligned in a fixed column. */
@@ -84,7 +71,7 @@ function renderStatus(s: StatusSnapshot): string {
 	const out: string[] = [];
 	out.push(
 		`${paint(ANSI.bold, "webhook-delivery")} ${paint(ANSI.dim, "—")} ${health}` +
-			`    ${paint(ANSI.dim, shortTime(s.generatedAt))}`,
+			`    ${paint(ANSI.dim, s.generatedAt.replace("T", " ").slice(0, 19))}`,
 	);
 	out.push("");
 

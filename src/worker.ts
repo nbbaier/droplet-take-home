@@ -11,7 +11,7 @@
 import { classifyResult, computeBackoffMs, shouldRetry } from "./classifier";
 import { config } from "./config";
 import { buildEnvelope, deliverOne } from "./delivery";
-import { log } from "./log";
+import { log } from "./shared";
 import { recordAttempt } from "./store/attempts";
 import {
 	cancelDeliveriesForEndpoint,

@@ -7,7 +7,7 @@
  * + the `*` wildcard semantics).
  */
 
-import { log } from "./log";
+import { log } from "./shared";
 import { createDelivery } from "./store/deliveries";
 import { listActiveEndpoints } from "./store/endpoints";
 import type { Endpoint, Event } from "./types";
@@ -17,7 +17,7 @@ import type { Endpoint, Event } from "./types";
  * - `["*"]` → matches every type
  * - otherwise → exact membership in the array
  */
-export function matches(endpoint: Endpoint, eventType: Event["type"]): boolean {
+function matches(endpoint: Endpoint, eventType: Event["type"]): boolean {
 	if (endpoint.eventTypes.length === 1 && endpoint.eventTypes[0] === "*") {
 		return true;
 	}

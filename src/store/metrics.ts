@@ -18,7 +18,7 @@ import type { DeliveryStatus, StatusSnapshot } from "../types";
 const DEFAULT_WINDOW_MS = 5 * 60 * 1_000;
 
 /** Counts of Deliveries by status, plus total. Missing statuses come back as 0. */
-export async function deliveryStatusCounts(): Promise<
+async function deliveryStatusCounts(): Promise<
 	StatusSnapshot["deliveries"]
 > {
 	const result = await db.execute(
@@ -42,7 +42,7 @@ export async function deliveryStatusCounts(): Promise<
 }
 
 /** Endpoint counts by lifecycle state. `deleted` (deleted_at set) is counted separately. */
-export async function endpointStateCounts(): Promise<
+async function endpointStateCounts(): Promise<
 	StatusSnapshot["endpoints"]
 > {
 	const result = await db.execute(
@@ -63,7 +63,7 @@ export async function endpointStateCounts(): Promise<
 }
 
 /** `pending` Deliveries whose next_attempt_at is still in the future (waiting out backoff). */
-export async function inBackoffCount(): Promise<number> {
+async function inBackoffCount(): Promise<number> {
 	const now = new Date().toISOString();
 	const result = await db.execute({
 		sql: `SELECT COUNT(*) AS n FROM deliveries
@@ -74,7 +74,7 @@ export async function inBackoffCount(): Promise<number> {
 }
 
 /** Total Events ingested. */
-export async function eventCount(): Promise<number> {
+async function eventCount(): Promise<number> {
 	const result = await db.execute(`SELECT COUNT(*) AS n FROM events`);
 	return Number(result.rows[0]?.n ?? 0);
 }
@@ -88,7 +88,7 @@ export async function eventCount(): Promise<number> {
 /**
  * Deliveries reaching a terminal state within `windowMs`.
  */
-export async function recentThroughput(
+async function recentThroughput(
 	windowMs: number = DEFAULT_WINDOW_MS,
 ): Promise<number> {
 	const window = new Date(Date.now() - windowMs).toISOString();
@@ -103,7 +103,7 @@ export async function recentThroughput(
 /**
  * Success rate over the window: delivered ÷ (delivered + failed).
  */
-export async function successRate(
+async function successRate(
 	windowMs = DEFAULT_WINDOW_MS,
 ): Promise<number | null> {
 	const window = new Date(Date.now() - windowMs).toISOString();

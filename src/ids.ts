@@ -4,7 +4,7 @@
  * checks. See ADR/PLAN — chosen over a "memorable" adjective-noun scheme.
  */
 
-export const ID_PREFIX = {
+const ID_PREFIX = {
 	endpoint: "ep",
 	event: "evt",
 	delivery: "dlv",
