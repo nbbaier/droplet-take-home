@@ -18,6 +18,7 @@ import {
 	deliveriesFor,
 	emitEvent,
 	getDeliveryWithAttempts,
+	listDeliveries,
 	listEndpoints,
 	waitForSettled,
 } from "../src/harness/client";
@@ -27,6 +28,12 @@ import type { StatusSnapshot } from "../src/types";
 const maxAttempts = Number(process.env.MAX_ATTEMPTS ?? 5);
 
 let daemon: TestDaemon;
+
+async function statusSnapshot(): Promise<StatusSnapshot> {
+	const res = await fetch(`${daemon.baseUrl}/status`);
+	expect(res.status).toBe(200);
+	return (await res.json()) as StatusSnapshot;
+}
 
 beforeAll(async () => {
 	daemon = await startTestDaemon();
@@ -345,24 +352,94 @@ describe("status", () => {
 
 		// Windowed metrics exist in the shape even while stubbed.
 		expect(snapshot.windowed).toBeDefined();
-		expect(snapshot.windowed.latencyMs).toBeDefined();
 	});
 
-	// Advanced/windowed metric math is stubbed for the human — assert once implemented.
-	test.todo(
-		"windowed throughput counts terminal deliveries in the window",
-		() => {},
-	);
-	test.todo(
-		"successRate = delivered ÷ (delivered + failed) over the window",
-		() => {},
-	);
-	test.todo(
-		"attempt latency p50/p95 computed from attempts.duration_ms",
-		() => {},
-	);
-	test.todo(
-		"attemptsToSuccess distribution/avg for delivered deliveries",
-		() => {},
-	);
+	test("windowed throughput counts terminal deliveries in the window", async () => {
+		const deliveredSink = await createSink(daemon.baseUrl, {
+			behavior: "always-200",
+		});
+		const failedSink = await createSink(daemon.baseUrl, {
+			behavior: "always-500",
+		});
+		const canceledSink = await createSink(daemon.baseUrl, {
+			behavior: "slow",
+		});
+
+		await emitEvent(daemon.baseUrl, {
+			type: "order.created",
+			data: { orderId: "ord_throughput_delivered" },
+		});
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: deliveredSink.endpoint.id,
+			expectedCount: 1,
+		});
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: failedSink.endpoint.id,
+			expectedCount: 1,
+		});
+
+		await emitEvent(daemon.baseUrl, {
+			type: "order.created",
+			data: { orderId: "ord_throughput_canceled" },
+		});
+		const deleteRes = await fetch(
+			`${daemon.baseUrl}/endpoints/${canceledSink.endpoint.id}`,
+			{ method: "DELETE" },
+		);
+		expect(deleteRes.status).toBe(204);
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: canceledSink.endpoint.id,
+			expectedCount: 2,
+		});
+
+		const snapshot = await statusSnapshot();
+		const windowStart = Date.now() - snapshot.windowMs;
+		const terminalDeliveries = (await listDeliveries(daemon.baseUrl)).filter(
+			(delivery) =>
+				["delivered", "failed", "canceled"].includes(delivery.status) &&
+				Date.parse(delivery.updatedAt) >= windowStart,
+		);
+
+		expect(snapshot.windowed.throughput).toBe(terminalDeliveries.length);
+		expect(snapshot.windowed.throughput).toBeGreaterThanOrEqual(3);
+	});
+
+	test("successRate = delivered ÷ (delivered + failed) over the window", async () => {
+		const deliveredSink = await createSink(daemon.baseUrl, {
+			behavior: "always-200",
+		});
+		const failedSink = await createSink(daemon.baseUrl, {
+			behavior: "always-500",
+		});
+
+		await emitEvent(daemon.baseUrl, {
+			type: "payment.succeeded",
+			data: { paymentId: "pay_rate_delivered" },
+		});
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: deliveredSink.endpoint.id,
+			expectedCount: 1,
+		});
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: failedSink.endpoint.id,
+			expectedCount: 1,
+		});
+
+		const snapshot = await statusSnapshot();
+		const windowStart = Date.now() - snapshot.windowMs;
+		const deliveries = (await listDeliveries(daemon.baseUrl)).filter(
+			(delivery) => Date.parse(delivery.updatedAt) >= windowStart,
+		);
+		const delivered = deliveries.filter(
+			(delivery) => delivery.status === "delivered",
+		).length;
+		const failed = deliveries.filter(
+			(delivery) => delivery.status === "failed",
+		).length;
+		const expected =
+			delivered + failed === 0 ? null : delivered / (delivered + failed);
+
+		expect(snapshot.windowed.successRate).toBe(expected);
+		expect(snapshot.windowed.successRate).not.toBeNull();
+	});
 });

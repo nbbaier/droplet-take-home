@@ -17,6 +17,7 @@
 export interface TestDaemon {
 	/** Base URL of the isolated daemon, e.g. http://localhost:53187 */
 	baseUrl: string;
+	dbPath: string;
 	/** Stop the worker + server and delete the temp DB. Idempotent-ish; call once. */
 	stop(): Promise<void>;
 }
@@ -70,6 +71,7 @@ export async function startTestDaemon(): Promise<TestDaemon> {
 
 	return {
 		baseUrl: `http://localhost:${server.port}`,
+		dbPath: dbPath,
 		async stop() {
 			stopWorker();
 			server.stop(true);

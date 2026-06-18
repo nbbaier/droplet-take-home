@@ -142,10 +142,6 @@ export interface StatusSnapshot {
 		throughput: number;
 		/** delivered ÷ (delivered + failed) over the window, or null if no terminal deliveries. */
 		successRate: number | null;
-		/** Attempt duration_ms percentiles over the window. */
-		latencyMs: { p50: number | null; p95: number | null };
-		/** Distribution/avg attempts for delivered deliveries. */
-		attemptsToSuccess: { avg: number | null; distribution: number[] };
 	};
 }
 

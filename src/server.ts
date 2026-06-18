@@ -4,7 +4,7 @@
  * and reports state.
  *
  * Wired: register Endpoint, ingest Event, list Endpoints/Deliveries, create Sink,
- * and the in-process Sink receiver. Status/metrics and delete are TODO (step 5).
+ * and the in-process Sink receiver.
  */
 
 import { Hono } from "hono";

@@ -14,7 +14,7 @@ import { type Scenario, scenarioNames, scenarios } from "./scenarios";
 
 async function runScenario(name: string, scenario: Scenario): Promise<void> {
 	const daemon = await startTestDaemon();
-	console.log(`\n▶ scenario: ${name}  (daemon @ ${daemon.baseUrl})\n`);
+	console.log(`\n▶ scenario: ${name}  (daemon @ ${daemon.baseUrl})`);
 	try {
 		await scenario(daemon.baseUrl);
 		console.log(`\n✓ ${name} complete\n`);

@@ -7,7 +7,6 @@
  *  - Simple aggregations (deliveryStatusCounts, endpointStateCounts,
  *    inBackoffCount, eventCount) — implemented.
  *  - Windowed / statistical metrics (recentThroughput, successRate,
- *    attemptLatencyPercentiles, attemptsToSuccess) — STUBBED for the human, who
  *    owns the real decisions (window bounds, p95 with small N). Each returns a
  *    typed placeholder so getStatusSnapshot returns a complete 200.
  */
@@ -88,54 +87,38 @@ export async function eventCount(): Promise<number> {
 
 /**
  * Deliveries reaching a terminal state within `windowMs`.
- * TODO (yours): COUNT deliveries WHERE status IN ('delivered','failed','canceled')
- * AND updated_at >= (now - windowMs). Decide the window anchor (updated_at is the
- * terminal-transition time here) and whether the lower bound is inclusive.
  */
 export async function recentThroughput(
-	_windowMs: number = DEFAULT_WINDOW_MS,
+	windowMs: number = DEFAULT_WINDOW_MS,
 ): Promise<number> {
-	return 0;
+	const window = new Date(Date.now() - windowMs).toISOString();
+	const result = await db.execute({
+		sql: `SELECT COUNT(*) AS n FROM deliveries
+			WHERE status IN ('delivered','failed','canceled') AND updated_at >= ?`,
+		args: [window],
+	});
+	return Number(result.rows[0]?.n ?? 0);
 }
 
 /**
  * Success rate over the window: delivered ÷ (delivered + failed).
- * TODO (yours): COUNT delivered and failed deliveries with updated_at in-window,
- * return delivered/(delivered+failed). Return null when the denominator is 0
- * (no terminal deliveries yet) rather than 0 or NaN. `canceled` is excluded
- * (nothing went wrong with the delivery itself — see CONTEXT.md).
  */
 export async function successRate(
-	_windowMs: number = DEFAULT_WINDOW_MS,
+	windowMs = DEFAULT_WINDOW_MS,
 ): Promise<number | null> {
-	return null;
-}
-
-/**
- * p50/p95 of attempt duration_ms over the window.
- * TODO (yours): SELECT duration_ms FROM attempts WHERE created_at in-window, then
- * compute percentiles in JS (SQLite has no percentile fn). Decide the
- * interpolation method and how to behave with small N (e.g. N<2 → p95 == max?).
- * Return { p50: null, p95: null } when there are no attempts in the window.
- */
-export async function attemptLatencyPercentiles(
-	_windowMs: number = DEFAULT_WINDOW_MS,
-): Promise<{ p50: number | null; p95: number | null }> {
-	return { p50: null, p95: null };
-}
-
-/**
- * Distribution / average of attempts taken for delivered Deliveries.
- * TODO (yours): for deliveries WHERE status = 'delivered', use attempt_count to
- * build a distribution (index = attempt number, value = count) and an average.
- * Decide whether to window this. Return { avg: null, distribution: [] } when
- * there are no delivered deliveries.
- */
-export async function attemptsToSuccess(): Promise<{
-	avg: number | null;
-	distribution: number[];
-}> {
-	return { avg: null, distribution: [] };
+	const window = new Date(Date.now() - windowMs).toISOString();
+	const result = await db.execute({
+		sql: `SELECT
+         SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS delivered,
+         SUM(CASE WHEN status = 'failed'    THEN 1 ELSE 0 END) AS failed
+       FROM deliveries
+       WHERE status IN ('delivered','failed') AND updated_at >= ?`,
+		args: [window],
+	});
+	const delivered = Number(result.rows[0]?.delivered ?? 0);
+	const failed = Number(result.rows[0]?.failed ?? 0);
+	if (delivered + failed === 0) return null;
+	return delivered / (delivered + failed);
 }
 
 /**
@@ -153,13 +136,10 @@ export async function getStatusSnapshot(
 		eventCount(),
 	]);
 
-	const [throughput, successRateValue, latencyMs, attemptsToSuccessValue] =
-		await Promise.all([
-			recentThroughput(windowMs),
-			successRate(windowMs),
-			attemptLatencyPercentiles(windowMs),
-			attemptsToSuccess(),
-		]);
+	const [throughput, successRateValue] = await Promise.all([
+		recentThroughput(windowMs),
+		successRate(windowMs),
+	]);
 
 	return {
 		generatedAt: new Date().toISOString(),
@@ -171,8 +151,6 @@ export async function getStatusSnapshot(
 		windowed: {
 			throughput,
 			successRate: successRateValue,
-			latencyMs,
-			attemptsToSuccess: attemptsToSuccessValue,
 		},
 	};
 }

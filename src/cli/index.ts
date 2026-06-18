@@ -63,12 +63,6 @@ function renderStatus(s: StatusSnapshot): string {
 	);
 	lines.push(`  throughput         ${s.windowed.throughput}`);
 	lines.push(`  success rate       ${s.windowed.successRate ?? "n/a"}`);
-	lines.push(
-		`  latency p50/p95    ${s.windowed.latencyMs.p50 ?? "n/a"} / ${s.windowed.latencyMs.p95 ?? "n/a"} ms`,
-	);
-	lines.push(
-		`  attempts-to-success avg ${s.windowed.attemptsToSuccess.avg ?? "n/a"}`,
-	);
 	return lines.join("\n");
 }
 

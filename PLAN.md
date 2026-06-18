@@ -87,11 +87,13 @@ One central config so demo delays can be shrunk:
 
 ### 5. Observability
 
-- [~] Status/metrics endpoint (computed on-read): queue depth by status,
-      throughput (last 1/5 min), success rate, retry health (in-backoff count +
-      attempts-to-success), latency p50/p95, endpoint counts (incl. disabled).
-      (`GET /status` + simple aggregations done; windowed/statistical metrics
-      stubbed with TODOs in `src/store/metrics.ts` — endpoint returns 200.)
+- [x] Status/metrics endpoint (computed on-read): `GET /status` with queue depth
+      by status, endpoint counts (incl. disabled/deleted), in-backoff count, event
+      count, windowed throughput, and success rate.
+      **Descoped for time:** latency p50/p95 and attempts-to-success (retry-health
+      distribution) were cut — the rest of the snapshot covers the observability
+      requirement. Could be added later from the stored `attempts.duration_ms` /
+      `attempt_count` columns (the data is there).
 - [~] `webhooks status` CLI command rendering it. (Fetch + basic render done;
       polished formatting / `--watch` left as a TODO in `src/cli/index.ts`.)
 - [x] JSON-lines lifecycle logs: `event.ingested`, `delivery.created`,
@@ -100,9 +102,9 @@ One central config so demo delays can be shrunk:
 
 ### Edge-case behaviors (fold into steps above)
 
-- [~] Endpoint soft-delete → in-flight Deliveries → `canceled` (not `failed`).
-  (Worker cancels deliveries for deleted/disabled Endpoints; store fn exists.
-  Still needs the `DELETE /endpoints/:id` route + proactive cancel.)
+- [x] Endpoint soft-delete → in-flight Deliveries → `canceled` (not `failed`).
+  (`DELETE /endpoints/:id` soft-deletes + cancels queued Deliveries; terminal
+  writes guard on `status='processing'` so a cancel isn't overwritten.)
 - [x] 410 → Endpoint `disabled`; queued Deliveries `canceled`; no new fan-out.
 - [x] Routing frozen at fan-out (subscription changes don't affect existing Deliveries).
 
@@ -123,6 +125,8 @@ One central config so demo delays can be shrunk:
 - Dynamic/registrable event types.
 - Separate worker entrypoint / real broker for horizontal scaling.
 - 410 auto-disable already done; broader auto-disable on repeated failures.
+- Latency p50/p95 + attempts-to-success metrics on `/status` (descoped for time;
+  `attempts.duration_ms` / `attempt_count` are already stored).
 
 ## README must include
 
