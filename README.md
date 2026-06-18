@@ -35,19 +35,15 @@ bun run status
 - [x] Fan out: each ingested event is delivered to every matching endpoint
 - [x] Test harness: generates endpoints + sinks, feeds events, prints results
 - [x] Observability: `GET /status` metrics, `webhooks status` CLI, JSON-lines logs
-- [x] Production concerns: retries + backoff, persistence, at-least-once delivery,
-      HMAC signing, failure handling (timeouts, 410/4xx, endpoint deletion)
+- [x] Production concerns: retries + backoff, persistence, at-least-once delivery, HMAC signing, failure handling (timeouts, 410/4xx, endpoint deletion)
 
 ---
 
 ## Architecture (one paragraph + diagram)
 
-One Bun process runs a Hono HTTP API and an in-process polling worker over a single
-SQLite file (`@libsql/client`).
+One Bun process runs a Hono HTTP API and an in-process polling worker over a single SQLite file (`@libsql/client`).
 
-The flow is shown below: `POST /events` → validate → persist Event →
-**fan out** one Delivery per matching Endpoint → worker **claims** due Deliveries →
-POSTs a signed envelope → records an Attempt → marks delivered / reschedules / fails.
+The flow is shown below: `POST /events` → validate → persist Event → **fan out** one Delivery per matching Endpoint → worker **claims** due Deliveries → POSTs a signed envelope → records an Attempt → marks delivered / reschedules / fails.
 
 ```
   POST /events
@@ -73,52 +69,31 @@ POSTs a signed envelope → records an Attempt → marks delivered / reschedules
 
 More information can be found in the following design docs:
 
-- [`CONTEXT.md`](./CONTEXT.md) (glossary)
-- [`docs/adr/`](./docs/adr/) (decisions)
-- [`PLAN.md`](./PLAN.md) (build log)
+- `[CONTEXT.md](./CONTEXT.md)` (glossary)
+- `[docs/adr/](./docs/adr/)` (decisions)
+- `[PLAN.md](./PLAN.md)` (build log)
 
 ### Data model (4 + 1 tables)
 
-- `endpoints` — a registered destination: URL, signing secret, subscribed event
-  types, lifecycle state (`active`/`disabled`, soft-delete via `deleted_at`).
+- `endpoints` — a registered destination: URL, signing secret, subscribed event types, lifecycle state (`active`/`disabled`, soft-delete via `deleted_at`).
 - `events` — an ingested event: type + opaque `data` payload.
-- `deliveries` — one event headed to one endpoint; the unit the worker drains
-  (status, attempt count, `next_attempt_at`, `claimed_at`).
-- `attempts` — one HTTP try for a delivery (status code, error, duration) — the
-  retry timeline.
+- `deliveries` — one event headed to one endpoint; the unit the worker drains (status, attempt count, `next_attempt_at`, `claimed_at`).
+- `attempts` — one HTTP try for a delivery (status code, error, duration) — the retry timeline.
 - `sinks` — test-only in-process receivers with a configurable behavior.
-- Terms are defined in [`CONTEXT.md`](./CONTEXT.md).
+- Terms are defined in `[CONTEXT.md](./CONTEXT.md)`.
 
 ---
 
 ## Design decisions (the interesting choices)
 
-- **SQLite as the delivery queue** (no Redis/broker). Why: SQLite is a single binary and fully
-  persistent. See [ADR 0001](./docs/adr/0001-sqlite-as-delivery-queue.md).
-- **CLI + harness over the HTTP API; no web dashboard.** Why: focus the time on the
-  delivery engine; observability lives in `status` + logs. See [ADR 0002](./docs/adr/0002-cli-over-http-api-no-dashboard.md).
-- **Delivery guarantee: at-least-once.** A Delivery stays eligible until it reaches a
-  terminal state (`delivered`, `failed`, or `canceled`). Transient errors reschedule
-  with backoff; a crash mid-Attempt leaves the row in `processing` until the
-  visibility timeout reclaims it for another try. That means a consumer may see the
-  same Event more than once — each Attempt sends `X-Webhook-Id` (the Event id,
-  stable across retries) so receivers can dedupe and approximate exactly-once
-  processing on their side.
-- **Typed routing.** Event types are a fixed enum (`order.created`, `order.updated`,
-  `order.deleted`, `payment.succeeded`, `payment.failed`). Endpoints subscribe to a
-  flat list of those types, or `["*"]` for all — mixing `*` with specific types is
-  rejected. Routing is **frozen at fan-out time**: once a Delivery exists, later
-  subscription edits do not affect it. Future work: dynamic/registrable event types.
+- **SQLite as the delivery queue** (no Redis/broker). Why: SQLite is a single binary and fully persistent. See [ADR 0001](./docs/adr/0001-sqlite-as-delivery-queue.md).
+- **CLI + harness over the HTTP API; no web dashboard.** Why: focus the time on the delivery engine; observability lives in `status` + logs. See [ADR 0002](./docs/adr/0002-cli-over-http-api-no-dashboard.md).
+- **Delivery guarantee: at-least-once.** A Delivery stays eligible until it reaches a terminal state (`delivered`, `failed`, or `canceled`). Transient errors reschedule with backoff; a crash mid-Attempt leaves the row in `processing` until the visibility timeout reclaims it for another try. That means a consumer may see the same Event more than once — each Attempt sends `X-Webhook-Id` (the Event id, stable across retries) so receivers can dedupe and approximate exactly-once processing on their side.
+- **Typed routing.** Event types are a fixed enum (`order.created`, `order.updated`, `order.deleted`, `payment.succeeded`, `payment.failed`). Endpoints subscribe to a flat list of those types, or `["*"]` for all — mixing `*` with specific types is rejected. Routing is **frozen at fan-out time**: once a Delivery exists, later subscription edits do not affect it. Future work: dynamic/registrable event types.
 - **Endpoint lifecycle:** three paths to stop delivery without marking it "failed":
-   1. **410 Gone** — the classifier treats this as permanent: the Delivery fails, the
-      Endpoint flips to `disabled`, and any other queued Deliveries for that Endpoint
-      are `canceled`. New events no longer fan out to it (`gone-disables` scenario).
-   2. **Soft-delete** — `DELETE /endpoints/:id` sets `deleted_at` and cancels queued
-      Deliveries. Rows stay for the audit trail (`delete-cancels` scenario).
-   3. **Disabled vs deleted** — `disabled` is system-triggered (today: 410) and
-      reversible; `deleted` is operator-initiated and terminal for that Endpoint.
-      In both cases, in-flight work becomes `canceled`, not `failed` — nothing was
-      wrong with the Delivery itself, the destination went away.
+   1. **410 Gone** — the classifier treats this as permanent: the Delivery fails, the Endpoint flips to `disabled`, and any other queued Deliveries for that Endpoint are `canceled`. New events no longer fan out to it (`gone-disables` scenario).
+   2. **Soft-delete** — `DELETE /endpoints/:id` sets `deleted_at` and cancels queued Deliveries. Rows stay for the audit trail (`delete-cancels` scenario).
+   3. **Disabled vs deleted** — `disabled` is system-triggered (today: 410) and reversible; `deleted` is operator-initiated and terminal for that Endpoint. In both cases, in-flight work becomes `canceled`, not `failed` — nothing was wrong with the Delivery itself, the destination went away.
 
 ### Retry policy
 
@@ -129,10 +104,8 @@ More information can be found in the following design docs:
 
 ### Signature contract (for consumers verifying webhooks)
 
-- Header `X-Webhook-Signature: sha256=<hex>` = HMAC-SHA256 over
-  `` `${X-Webhook-Timestamp}.${rawBody}` `` keyed by the endpoint's secret.
-- To verify: recompute over the timestamp + the exact received body — **not** the
-  body alone. Timestamp in the signed payload gives replay protection.
+- Header `X-Webhook-Signature: sha256=<hex>` = HMAC-SHA256 over `` `${X-Webhook-Timestamp}.${rawBody}` `` keyed by the endpoint's secret.
+- To verify: recompute over the timestamp + the exact received body — **not** the body alone. Timestamp in the signed payload gives replay protection.
 
 ```ts
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -151,12 +124,12 @@ function verify(rawBody: string, headers: Headers, secret: string): boolean {
 
 Each Attempt POSTs JSON to the Endpoint URL with these headers:
 
-| Header                | Value                                                    |
-| --------------------- | -------------------------------------------------------- |
-| `Content-Type`        | `application/json`                                       |
-| `X-Webhook-Id`        | Event id (stable dedup key across retries)               |
-| `X-Webhook-Timestamp` | ISO-8601 timestamp included in the signature             |
-| `X-Webhook-Signature` | `sha256=<hex>` HMAC over `` `${timestamp}.${rawBody}` `` |
+| Header                | Value                                              |
+| --------------------- | -------------------------------------------------- |
+| `Content-Type`        | `application/json`                                 |
+| `X-Webhook-Id`        | Event id (stable dedup key across retries)         |
+| `X-Webhook-Timestamp` | ISO-8601 timestamp included in the signature       |
+| `X-Webhook-Signature` | `sha256=<hex>` HMAC over `${timestamp}.${rawBody}` |
 
 Body shape:
 
@@ -189,15 +162,13 @@ Every timing knob is env-overridable (read once at startup). Defaults:
 | Log level                   | `LOG_LEVEL`                                 | info                        | `silent` suppresses logs           |
 | DB / port / base URL        | `DATABASE_URL` / `PORT` / `PUBLIC_BASE_URL` | `file:./webhooks.db` / 3000 |                                    |
 
-- `bun run demo` sets a snappy profile (`BACKOFF_BASE_MS=200`, low timeouts) so
-  retries/cancels resolve in seconds for a live demo.
+- `bun run demo` sets a snappy profile (`BACKOFF_BASE_MS=200`, low timeouts) so retries/cancels resolve in seconds for a live demo.
 
 ---
 
 ## HTTP API (reference)
 
-- `POST /endpoints` — register an external URL `{ url, eventTypes }` → returns the
-  endpoint incl. its secret (shown once).
+- `POST /endpoints` — register an external URL `{ url, eventTypes }` → returns the endpoint incl. its secret (shown once).
 - `GET /endpoints` · `DELETE /endpoints/:id` (soft-delete + cancel queued)
 - `POST /events` — ingest `{ type, data }` → persists + fans out.
 - `GET /deliveries` · `GET /deliveries/:id` (delivery + attempt timeline)
@@ -224,35 +195,31 @@ curl -s localhost:3000/status
 
 ## Test harness & scenarios
 
-- The harness drives the **running daemon** over HTTP (so data persists and shows
-  in `status`). `bun run harness` (menu) or `bun run harness <name>`.
-- **Sinks** are programmable in-process receivers registered as Endpoints pointing
-  at `POST /_sink/:id`:
+- The harness drives the **running daemon** over HTTP (so data persists and shows in `status`). `bun run harness` (menu) or `bun run harness <name>`.
+- **Sinks** are programmable in-process receivers registered as Endpoints pointing at `POST /_sink/:id`:
 
-| Behavior            | What it does                                          |
-| ------------------- | ----------------------------------------------------- |
-| `always-200`        | Immediate success                                     |
-| `always-500`        | Fails every attempt; retries until exhausted          |
-| `fail-then-recover` | Returns 500 for the first N hits, then 200            |
-| `410-gone`          | Permanent failure; disables the Endpoint              |
-| `slow`              | Sleeps past the request timeout                       |
-| `verify-signature`  | Recomputes the HMAC; returns 401 on mismatch          |
+| Behavior            | What it does                                 |
+| ------------------- | -------------------------------------------- |
+| `always-200`        | Immediate success                            |
+| `always-500`        | Fails every attempt; retries until exhausted |
+| `fail-then-recover` | Returns 500 for the first N hits, then 200   |
+| `410-gone`          | Permanent failure; disables the Endpoint     |
+| `slow`              | Sleeps past the request timeout              |
+| `verify-signature`  | Recomputes the HMAC; returns 401 on mismatch |
 
 - Scenarios (each prints a delivery/attempt timeline + summary):
 
-| Scenario             | What it shows                                                       |
+| Scenario             | What it shows                                                      |
 | -------------------- | ------------------------------------------------------------------ |
 | `happy-path`         | Healthy endpoint, delivered on the first attempt                   |
-| `retry-recovery`     | Transient 500s, then recovers to `delivered` (attempt 4)          |
-| `permanent-failure`  | `always-500` exhausts retries → terminal `failed`                 |
+| `retry-recovery`     | Transient 500s, then recovers to `delivered` (attempt 4)           |
+| `permanent-failure`  | `always-500` exhausts retries → terminal `failed`                  |
 | `gone-disables`      | `410` fails the delivery, disables the endpoint, stops new fan-out |
 | `delete-cancels`     | Deleting an endpoint mid-flight cancels its deliveries             |
 | `signature-verified` | Receiver verifies the HMAC; a valid signature → `delivered`        |
 | `routing`            | One event fans out only to matching subscriptions (+ wildcard)     |
 
-- `bun test` mirrors the scenarios 1:1 but **asserts** (scenarios print, tests
-  assert; shared setup). Tests use an isolated temp daemon; the harness uses the
-  real one.
+- `bun test` mirrors the scenarios 1:1 but **asserts** (scenarios print, tests assert; shared setup). Tests use an isolated temp daemon; the harness uses the real one.
 
 Sample — `bun run harness retry-recovery` (transient 500s, then delivered):
 
@@ -279,9 +246,7 @@ retry-recovery: transient 500s, then delivered
 
 ## Observability
 
-- `GET /status` (and `bun run status`): queue depth by status, endpoint counts,
-  in-backoff, events, windowed throughput + success rate. Computed on-read (no
-  drift). Rendered (color in a real terminal):
+- `GET /status` (and `bun run status`): queue depth by status, endpoint counts, in-backoff, events, windowed throughput + success rate. Computed on-read (no drift). Rendered (color in a real terminal):
 
 ```
 webhook-delivery — degraded    2026-06-18 01:55:12
@@ -298,24 +263,16 @@ Deliveries            Endpoints
   total         18
 ```
 
-- JSON-lines lifecycle logs: `event.ingested`, `delivery.created`,
-  `attempt.started/succeeded/failed`, `delivery.exhausted`, `endpoint.disabled` —
-  correlatable by `delivery_id` / `event_id`.
+- JSON-lines lifecycle logs: `event.ingested`, `delivery.created`, `attempt.started/succeeded/failed`, `delivery.exhausted`, `endpoint.disabled` — correlatable by `delivery_id` / `event_id`.
 
 ---
 
 ## Scope & trade-offs
 
-- **Descoped for time:** latency p50/p95 + attempts-to-success metrics; polished
-  `--watch` live status; inbound API auth (open by design for the exercise).
-- **Future work:** idempotency key on ingest, dynamic event types, separate worker
-  process / real broker for horizontal scaling, broader auto-disable. See
-  [`PLAN.md`](./PLAN.md).
-- **With more time:** `webhooks status --watch` (live queue view), latency p50/p95
-  and attempts-to-success from the `attempts` table (data is already stored),
-  inbound API auth, and manual re-trigger of exhausted Deliveries.
-- **Known limitations:** single writer process (SQLite throughput cap), fixed event
-  type enum, open HTTP API (no auth — fine for a local exercise, not production).
+- **Descoped for time:** latency p50/p95 + attempts-to-success metrics; polished `--watch` live status; inbound API auth (open by design for the exercise).
+- **Future work:** idempotency key on ingest, dynamic event types, separate worker process / real broker for horizontal scaling, broader auto-disable. See [`PLAN.md`](./PLAN.md).
+- **With more time:** `webhooks status --watch` (live queue view), latency p50/p95 and attempts-to-success from the `attempts` table (data is already stored), inbound API auth, and manual re-trigger of exhausted Deliveries.
+- **Known limitations:** single writer process (SQLite throughput cap), fixed event type enum, open HTTP API (no auth — fine for a local exercise, not production).
 
 ---
 
@@ -325,30 +282,22 @@ This project was built in collaboration with Claude Code, predominantly in a sin
 
 My process with Claude was the following:
 
-1. I read the assignment and do some early brainstorming in [`docs/brainstorming.md`](./docs/brainstorming.md).
+1. I read the assignment and do some early brainstorming in `[docs/brainstorming.md](./docs/brainstorming.md)`.
 2. I used an agent skill, `/grill-with-docs` (see below) to have Claude Code interview me on what I wanted to build, with reference to the assignment and brainstorming doc.
-3. I then worked with Claude in a **scaffold-then-implement** loop: an agent stubs mechanical plumbing and leaves `// TODO (yours)` markers on the interesting bits; a human implements those interesting bits, and the agent and the human review the result. See the handoff notes in [`docs/handoff-*.md`](./docs/)
+3. I then worked with Claude in a **scaffold-then-implement** loop: an agent stubs mechanical plumbing and leaves `// TODO (yours)` markers on the interesting bits; a human implements those interesting bits, and the agent and the human review the result. See the handoff notes in `[docs/handoff-*.md](./docs/)`
 
 Some more specific notes on the process:
 
-- **Design grilling** — back-and-forth on naming and guarantees produced
-  [`CONTEXT.md`](./CONTEXT.md) (domain glossary) and the ADRs (SQLite-as-queue,
-  CLI-over-API). [`PLAN.md`](./PLAN.md) is the ordered build log.
-- **Where the human drove** — architecture calls (no dashboard, SQLite queue,
-  at-least-once semantics, signature contract), implementing the worker/classifier/
-  store layer, and deciding what to descope.
-- **Where the LLM helped** — scaffolding harness scenarios, sink behaviors, metrics
-  queries, and test setup; generating the initial Hono routes and Zod schemas.
-- **Adversarial review** — a review pass by the agent caught real bugs before they shipped: the
-  HMAC was initially signed over the wrong bytes (body alone instead of
-  `` `${timestamp}.${body}` ``), and a cancel race could overwrite a `processing`
-  Delivery after soft-delete.
+- **Design grilling** — back-and-forth on naming and guarantees produced `[CONTEXT.md](./CONTEXT.md)` (domain glossary) and the ADRs (SQLite-as-queue, CLI-over-API). `[PLAN.md](./PLAN.md)` is the ordered build log.
+- **Where the human drove** — architecture calls (no dashboard, SQLite queue, at-least-once semantics, signature contract), implementing the worker/classifier/store layer, and deciding what to descope.
+- **Where the LLM helped** — scaffolding harness scenarios, sink behaviors, metrics queries, and test setup; generating the initial Hono routes and Zod schemas.
+- **Adversarial review** — a review pass by the agent caught real bugs before they shipped: the HMAC was initially signed over the wrong bytes (body alone instead of `` `${timestamp}.${body}` ``), and a cancel race could overwrite a `processing` Delivery after soft-delete.
 
 I've included transcripts for the three sessions used to build this project in the `transcripts` directory. I used Simon Willison's [claude-code-transcripts](https://github.com/simonw/claude-code-transcripts) tool. The transcripts are:
 
-1. [`1_main-thread`](./transcripts/1_main-thread/index.html): the main thread where I did the vast majority of the LLM-assisted coding.
-2. [`2_step-4-handoff`](./transcripts/2_step-4-handoff/index.html): the thread where an agent scaffolded the code for step 4 of the [plan](./PLAN.md).
-3. [`3_step-5-handoff`](./transcripts/3_step-5-handoff/index.html): the thread where an agent scaffolded the code for step 5 of the [plan](./PLAN.md).
+1. `[1_main-thread](./transcripts/1_main-thread/index.html)`: the main thread where I did the vast majority of the LLM-assisted coding.
+2. `[2_step-4-handoff](./transcripts/2_step-4-handoff/index.html)`: the thread where an agent scaffolded the code for step 4 of the [plan](./PLAN.md).
+3. `[3_step-5-handoff](./transcripts/3_step-5-handoff/index.html)`: the thread where an agent scaffolded the code for step 5 of the [plan](./PLAN.md).
 
 I used two agent skills from [mattpocock/skills](https://github.com/mattpocock/skills) to help me during the project:
 
