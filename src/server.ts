@@ -13,8 +13,17 @@ import { fanOut } from "./fanout";
 import { newId } from "./ids";
 import { behaviorResponse } from "./sinks";
 import { listAttemptsForDelivery } from "./store/attempts";
-import { getDelivery, listDeliveries } from "./store/deliveries";
-import { createEndpoint, getEndpoint, listEndpoints } from "./store/endpoints";
+import {
+	cancelDeliveriesForEndpoint,
+	getDelivery,
+	listDeliveries,
+} from "./store/deliveries";
+import {
+	createEndpoint,
+	getEndpoint,
+	listEndpoints,
+	softDeleteEndpoint,
+} from "./store/endpoints";
 import { createEvent } from "./store/events";
 import { createSink, getSink, incrementHits } from "./store/sinks";
 import {
@@ -39,7 +48,7 @@ app.post("/endpoints", async (c) => {
 		);
 	}
 	const endpoint = await createEndpoint(parsed.data);
-	// Secret is returned once, on creation.
+
 	return c.json(endpoint, 201);
 });
 
@@ -115,5 +124,13 @@ app.post("/_sink/:id", async (c) => {
 	return behaviorResponse({ ...sink, hits }, endpoint, c.req.raw);
 });
 
+app.delete("/endpoints/:id", async (c) => {
+	const id = c.req.param("id");
+	const endpoint = await getEndpoint(id);
+	if (!endpoint) return c.json({ error: "endpoint_not_found" }, 404);
+	await softDeleteEndpoint(id);
+	await cancelDeliveriesForEndpoint(id);
+	return c.body(null, 204);
+});
+
 // TODO (PLAN step 5): GET /status (computed-on-read metrics snapshot).
-// TODO: DELETE /endpoints/:id (soft-delete + cancel its queued Deliveries).

@@ -28,7 +28,9 @@ function generateSecret(): string {
 	return `whsec_${crypto.randomUUID().replaceAll("-", "")}`;
 }
 
-export async function createEndpoint(input: RegisterEndpointInput): Promise<Endpoint> {
+export async function createEndpoint(
+	input: RegisterEndpointInput,
+): Promise<Endpoint> {
 	const now = new Date().toISOString();
 	const endpoint: Endpoint = {
 		id: newId("ep"),
