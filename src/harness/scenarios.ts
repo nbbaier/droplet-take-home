@@ -5,15 +5,16 @@
  * PLAN step 5). The matching `bun test` cases ASSERT the same setup; share these
  * helpers, don't fork the logic.
  *
- * `happy-path` is fully worked as the reference template. The rest are stubbed:
- * each throws with a TODO describing exactly what to set up and assert, for the
- * human to fill in. Keep the print/assert split — scenarios print, tests assert.
+ * `happy-path` is fully worked as the reference template. Keep the print/assert
+ * split — scenarios print, tests assert.
  */
 
 import {
 	createSink,
+	deliveriesFor,
 	emitEvent,
 	getDeliveryWithAttempts,
+	listEndpoints,
 	waitForSettled,
 } from "./client";
 
@@ -55,23 +56,9 @@ function printStatusSummary(
 	console.log(`  ${label}: ${parts.join(", ") || "(no deliveries)"}`);
 }
 
-// ---------------------------------------------------------------------------
-// happy-path — the fully-worked reference scenario.
-// ---------------------------------------------------------------------------
-
-/**
- * Healthy endpoint, single event, delivered on the first try.
- *
- * setup:  always-200 sink (auto-registers an Endpoint).
- * emit:   one order.created event.
- * assert (in the test): one Delivery, status `delivered`, attempt_count === 1,
- *         single Attempt with a 2xx status code.
- */
 const happyPath: Scenario = async (baseUrl) => {
 	console.log("happy-path: healthy endpoint, delivered on first try\n");
 
-	// Capture the endpoint so we scope waiting/printing to THIS scenario's
-	// deliveries — the daemon's DB is shared across runs/tests. Copy this shape.
 	const { endpoint } = await createSink(baseUrl, { behavior: "always-200" });
 	const { deliveryCount } = await emitEvent(baseUrl, {
 		type: "order.created",
@@ -87,92 +74,157 @@ const happyPath: Scenario = async (baseUrl) => {
 	printStatusSummary(settled);
 };
 
-// ---------------------------------------------------------------------------
-// Stubbed scenarios — TODO (yours). Each describes setup + what to assert.
-// Implement by copying the happy-path shape; keep print here, assert in the test.
-// Capture the endpoint id from createSink/registerEndpoint and pass it to
-// waitForSettled({ endpointId }) / deliveriesFor(baseUrl, endpointId) so you
-// assert on THIS scenario's deliveries — the daemon's DB is shared across tests.
-// ---------------------------------------------------------------------------
+const retryRecovery: Scenario = async (baseUrl) => {
+	console.log("retry-recovery: transient 500s, then delivered\n");
 
-const retryRecovery: Scenario = async (_baseUrl) => {
-	// TODO (yours): retry-recovery.
-	// setup:  a FRESH `fail-then-recover` sink (hits are per-sink, NOT per-delivery —
-	//         a reused sink may have already burned its failing hits). Emit one event.
-	// expect: the worker retries through the 500s and eventually delivers.
-	// assert (test): one Delivery ends `delivered` with attempt_count === 4
-	//         (config.failThenRecoverThreshold=3 → 3×500 then 200), and the Attempt
-	//         timeline shows three 500s followed by a 200.
-	// print:  the per-Attempt timeline via printDeliveryTimeline + status summary.
-	throw new Error("retry-recovery scenario not implemented");
+	const { endpoint } = await createSink(baseUrl, {
+		behavior: "fail-then-recover",
+	});
+	const { deliveryCount } = await emitEvent(baseUrl, {
+		type: "payment.succeeded",
+		data: { paymentId: "pay_1", amount: 42 },
+	});
+	console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+
+	const settled = await waitForSettled(baseUrl, {
+		endpointId: endpoint.id,
+		expectedCount: 1,
+	});
+	for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+	printStatusSummary(settled);
 };
 
-const permanentFailure: Scenario = async (_baseUrl) => {
-	// TODO (yours): permanent-failure.
-	// setup:  an `always-500` sink. Emit one event.
-	// expect: every Attempt 500s; the worker exhausts retries.
-	// assert (test): the Delivery ends `failed` with attempt_count === config.maxAttempts
-	//         (default 5), and the Attempt timeline is all 500s.
-	// print:  the per-Attempt timeline + status summary.
-	throw new Error("permanent-failure scenario not implemented");
+const permanentFailure: Scenario = async (baseUrl) => {
+	console.log("permanent-failure: always-500, retries exhausted\n");
+
+	const { endpoint } = await createSink(baseUrl, { behavior: "always-500" });
+	const { deliveryCount } = await emitEvent(baseUrl, {
+		type: "payment.failed",
+		data: { paymentId: "pay_1", amount: 42 },
+	});
+	console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+
+	const settled = await waitForSettled(baseUrl, {
+		endpointId: endpoint.id,
+		expectedCount: 1,
+	});
+	for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+	printStatusSummary(settled);
 };
 
-const goneDisables: Scenario = async (_baseUrl) => {
-	// TODO (yours): gone-disables.
-	// setup:  a `410-gone` sink. Capture its endpoint id from createSink(). Emit one event.
-	// expect: 410 is a permanent failure that ALSO disables the Endpoint and cancels
-	//         its other queued Deliveries (see worker.ts `gone` case).
-	// assert (test): the Delivery ends `failed`; GET /endpoints shows that Endpoint
-	//         `state: "disabled"`; a SECOND event of the same type produces NO new
-	//         Delivery for it (no fan-out to disabled Endpoints).
-	// print:  the timeline + the endpoint's post-state.
-	throw new Error("gone-disables scenario not implemented");
-};
+const goneDisables: Scenario = async (baseUrl) => {
+	console.log("gone-disables: 410 disables the endpoint\n");
 
-const deleteCancels: Scenario = async (_baseUrl) => {
-	// TODO (yours): delete-cancels — BLOCKED.
-	// This scenario needs `DELETE /endpoints/:id` (soft-delete + proactive cancel of
-	// queued Deliveries), which does NOT exist yet (PLAN edge-case [~], out of scope
-	// for the harness step — do NOT build the route here).
-	// Once that route exists:
-	// setup:  a `slow` sink (so Deliveries sit in-flight long enough to cancel). Emit
-	//         an event, then DELETE the endpoint before delivery completes.
-	// assert (test): in-flight Deliveries end `canceled` (NOT `failed`).
-	throw new Error(
-		"delete-cancels scenario blocked on DELETE /endpoints/:id (not implemented)",
+	const { endpoint } = await createSink(baseUrl, { behavior: "410-gone" });
+	const { deliveryCount } = await emitEvent(baseUrl, {
+		type: "order.created",
+		data: { orderId: "ord_gone", total: 99 },
+	});
+	console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+
+	const settled = await waitForSettled(baseUrl, {
+		endpointId: endpoint.id,
+		expectedCount: 1,
+	});
+	for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+	printStatusSummary(settled);
+
+	const endpoints = await listEndpoints(baseUrl);
+	const ep = endpoints.find((e) => e.id === endpoint.id);
+	console.log(`  endpoint ${endpoint.id}: state=${ep?.state ?? "unknown"}`);
+
+	const beforeSecond = (await deliveriesFor(baseUrl, endpoint.id)).length;
+	const { deliveryCount: secondCount } = await emitEvent(baseUrl, {
+		type: "order.created",
+		data: { orderId: "ord_gone_2", total: 100 },
+	});
+	const afterSecond = (await deliveriesFor(baseUrl, endpoint.id)).length;
+	console.log(
+		`  second emit: deliveryCount=${secondCount}, endpoint deliveries ${beforeSecond} → ${afterSecond}`,
 	);
 };
 
-const signatureVerified: Scenario = async (_baseUrl) => {
-	// TODO (yours): signature-verified.
-	// setup:  a `verify-signature` sink. It recomputes HMAC over `${timestamp}.${body}`
-	//         with the Endpoint secret and 401s on mismatch (see sinks.ts). Emit one event.
-	// expect: the delivered envelope's signature verifies → 200.
-	// assert (test): the Delivery ends `delivered`, attempt_count === 1, Attempt is 200.
-	// optional: a tampered variant — there's no knob to corrupt the signature from the
-	//         client side (signing is server-side), so document this as out of reach via
-	//         the HTTP surface, or add a sink behavior in a future step.
-	// print:  the timeline + summary.
-	throw new Error("signature-verified scenario not implemented");
+const deleteCancels: Scenario = async (baseUrl) => {
+	console.log(
+		"delete-cancels: deleting an endpoint cancels its in-flight deliveries\n",
+	);
+
+	const { endpoint } = await createSink(baseUrl, { behavior: "slow" });
+	const { deliveryCount } = await emitEvent(baseUrl, {
+		type: "order.created",
+		data: { orderId: "ord_delete", total: 100 },
+	});
+	console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+
+	const deleteRes = await fetch(`${baseUrl}/endpoints/${endpoint.id}`, {
+		method: "DELETE",
+	});
+	console.log(`  deleted endpoint ${endpoint.id}: HTTP ${deleteRes.status}`);
+
+	const settled = await waitForSettled(baseUrl, {
+		endpointId: endpoint.id,
+		expectedCount: 1,
+	});
+	for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+	printStatusSummary(settled);
 };
 
-const routing: Scenario = async (_baseUrl) => {
-	// TODO (yours): routing.
-	// setup:  register endpoints with DISJOINT event_types plus one wildcard ["*"]:
-	//         e.g. sink A subscribes ["order.created"], sink B ["payment.succeeded"],
-	//         sink C ["*"]. Use createSink({ behavior: "always-200", eventTypes: [...] }).
-	// emit:   ONE order.created event.
-	// expect: fan-out routes only to matching subscriptions (frozen at fan-out).
-	// assert (test): exactly the order.created endpoint (A) and the wildcard (C) get a
-	//         Delivery; B gets none. Cross-check by mapping Deliveries' endpoint_id to
-	//         the captured sink endpoint ids. deliveryCount from emitEvent should be 2.
-	// print:  which endpoints received Deliveries + summary.
-	throw new Error("routing scenario not implemented");
+const signatureVerified: Scenario = async (baseUrl) => {
+	console.log("signature-verified: valid HMAC accepted\n");
+
+	const { endpoint } = await createSink(baseUrl, {
+		behavior: "verify-signature",
+	});
+	const { deliveryCount } = await emitEvent(baseUrl, {
+		type: "order.created",
+		data: { orderId: "ord_sig", total: 55 },
+	});
+	console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+
+	const settled = await waitForSettled(baseUrl, {
+		endpointId: endpoint.id,
+		expectedCount: 1,
+	});
+	for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+	printStatusSummary(settled);
 };
 
-// ---------------------------------------------------------------------------
-// Registry.
-// ---------------------------------------------------------------------------
+const routing: Scenario = async (baseUrl) => {
+	console.log("routing: fan-out to matching subscriptions only\n");
+
+	const orderSink = await createSink(baseUrl, {
+		behavior: "always-200",
+		eventTypes: ["order.created"],
+	});
+	const paymentSink = await createSink(baseUrl, {
+		behavior: "always-200",
+		eventTypes: ["payment.succeeded"],
+	});
+	const wildcardSink = await createSink(baseUrl, {
+		behavior: "always-200",
+		eventTypes: ["*"],
+	});
+
+	const { deliveryCount } = await emitEvent(baseUrl, {
+		type: "order.created",
+		data: { orderId: "ord_1", total: 1010 },
+	});
+	console.log(`  fanned out to ${deliveryCount} delivery(ies)`);
+
+	const settled = await waitForSettled(baseUrl, { expectedCount: 2 });
+	const endpointIds = new Set(settled.map((d) => d.endpointId));
+	console.log(
+		`  order.created endpoint (${orderSink.endpoint.id}): ${endpointIds.has(orderSink.endpoint.id) ? "received" : "skipped"}`,
+	);
+	console.log(
+		`  payment.succeeded endpoint (${paymentSink.endpoint.id}): ${endpointIds.has(paymentSink.endpoint.id) ? "received" : "skipped"}`,
+	);
+	console.log(
+		`  wildcard endpoint (${wildcardSink.endpoint.id}): ${endpointIds.has(wildcardSink.endpoint.id) ? "received" : "skipped"}`,
+	);
+	for (const d of settled) await printDeliveryTimeline(baseUrl, d.id);
+	printStatusSummary(settled);
+};
 
 export const scenarios: Record<string, Scenario> = {
 	"happy-path": happyPath,

@@ -114,7 +114,7 @@ export async function markDelivered(id: string): Promise<void> {
 	await db.execute({
 		sql: `UPDATE deliveries
 			SET status = 'delivered', attempt_count = attempt_count + 1, claimed_at = NULL, updated_at = ?
-			WHERE id = ?`,
+			WHERE id = ? AND status = 'processing'`,
 		args: [now, id],
 	});
 }
@@ -128,7 +128,7 @@ export async function rescheduleDelivery(
 	await db.execute({
 		sql: `UPDATE deliveries
 			SET status = 'pending', attempt_count = attempt_count + 1, next_attempt_at = ?, claimed_at = NULL, updated_at = ?
-			WHERE id = ?`,
+			WHERE id = ? AND status = 'processing'`,
 		args: [nextAttemptAt, now, id],
 	});
 }
@@ -150,7 +150,7 @@ export async function markFailed(id: string): Promise<void> {
 	await db.execute({
 		sql: `UPDATE deliveries
 			SET status = 'failed', attempt_count = attempt_count + 1, claimed_at = NULL, updated_at = ?
-			WHERE id = ?`,
+			WHERE id = ? AND status = 'processing'`,
 		args: [now, id],
 	});
 }

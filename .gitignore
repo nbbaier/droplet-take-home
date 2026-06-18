@@ -1,6 +1,6 @@
 _.log
 .cache
-.cursor/hooks/state/continual-learning.json
+.cursor/hooks/state/continual-learning*
 .DS_Store
 .env
 .env.development.local

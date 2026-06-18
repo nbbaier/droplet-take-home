@@ -19,7 +19,9 @@ async function runScenario(name: string, scenario: Scenario): Promise<void> {
 		await scenario(daemon.baseUrl);
 		console.log(`\n✓ ${name} complete\n`);
 	} catch (err) {
-		console.error(`\n✗ ${name} failed: ${err instanceof Error ? err.message : err}\n`);
+		console.error(
+			`\n✗ ${name} failed: ${err instanceof Error ? err.message : err}\n`,
+		);
 		process.exitCode = 1;
 	} finally {
 		await daemon.stop();
@@ -47,7 +49,12 @@ async function menu(): Promise<void> {
 			process.stdout.write("Pick a scenario (number or name): ");
 			continue;
 		}
-		await runScenario(name, scenarios[name]!);
+		if (!scenarios[name]) {
+			console.error(`Unknown scenario: ${name}`);
+			process.exitCode = 1;
+			return;
+		}
+		await runScenario(name, scenarios[name]);
 		return;
 	}
 }

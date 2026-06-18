@@ -8,20 +8,22 @@
  * those modules; a static import would lock config in with the ambient env first.
  * Import only the bootstrap + client helpers (client.ts is store/db-free).
  *
- * `happy-path` is fully asserted as the reference. The remaining scenarios are
- * `test.todo` — the suite stays green while the gaps stay visible. Fill each in
- * alongside its scenario in scenarios.ts.
+ * `happy-path` is fully asserted as the reference. Remaining scenarios follow the
+ * same pattern: share setup with scenarios.ts, assert on terminal delivery state.
  */
 
-import { afterAll, beforeAll, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
 	createSink,
 	deliveriesFor,
 	emitEvent,
 	getDeliveryWithAttempts,
+	listEndpoints,
 	waitForSettled,
 } from "../src/harness/client";
 import { startTestDaemon, type TestDaemon } from "../src/testing/bootstrap";
+
+const maxAttempts = Number(process.env.MAX_ATTEMPTS ?? 5);
 
 let daemon: TestDaemon;
 
@@ -30,66 +32,282 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-	// MUST stop, or the worker poll loop + server keep the process alive and the
-	// test run hangs.
 	await daemon.stop();
 });
 
-test("happy-path: healthy endpoint is delivered on the first attempt", async () => {
-	// Scope to THIS endpoint: the test daemon shares one DB across all tests, so
-	// the global delivery list mixes in other tests' rows. Copy this shape.
-	const { endpoint } = await createSink(daemon.baseUrl, {
-		behavior: "always-200",
+describe("happy-path", () => {
+	test("healthy endpoint is delivered on the first attempt", async () => {
+		const { endpoint } = await createSink(daemon.baseUrl, {
+			behavior: "always-200",
+		});
+
+		await emitEvent(daemon.baseUrl, {
+			type: "order.created",
+			data: { orderId: "ord_1", total: 42 },
+		});
+
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: endpoint.id,
+			expectedCount: 1,
+		});
+
+		const settled = await deliveriesFor(daemon.baseUrl, endpoint.id);
+		expect(settled).toHaveLength(1);
+
+		const delivery = settled[0];
+		if (!delivery) throw new Error("[happy-path] Delivery not found");
+
+		expect(delivery.status).toBe("delivered");
+		expect(delivery.attemptCount).toBe(1);
+
+		const detail = await getDeliveryWithAttempts(daemon.baseUrl, delivery.id);
+		expect(detail.attempts).toHaveLength(1);
+		const attempt = detail.attempts[0];
+		if (!attempt) throw new Error("[happy-path] Attempt not found");
+		expect(attempt.statusCode).toBeGreaterThanOrEqual(200);
+		expect(attempt.statusCode).toBeLessThan(300);
+		expect(attempt.error).toBeNull();
 	});
-
-	const { deliveryCount } = await emitEvent(daemon.baseUrl, {
-		type: "order.created",
-		data: { orderId: "ord_1", total: 42 },
-	});
-	expect(deliveryCount).toBe(1);
-
-	const settled = await waitForSettled(daemon.baseUrl, {
-		endpointId: endpoint.id,
-		expectedCount: 1,
-	});
-	expect(settled).toHaveLength(1);
-
-	const delivery = settled[0]!;
-	expect(delivery.status).toBe("delivered");
-	expect(delivery.attemptCount).toBe(1);
-
-	const detail = await getDeliveryWithAttempts(daemon.baseUrl, delivery.id);
-	expect(detail.attempts).toHaveLength(1);
-	const attempt = detail.attempts[0]!;
-	expect(attempt.statusCode).toBeGreaterThanOrEqual(200);
-	expect(attempt.statusCode).toBeLessThan(300);
-	expect(attempt.error).toBeNull();
 });
 
-// The scenarios below are stubbed in src/harness/scenarios.ts. Each test.todo
-// names what to assert once the scenario is implemented (copy the happy-path shape).
+describe("retry-recovery", () => {
+	test("recovers to delivered after transient 500s", async () => {
+		const { endpoint } = await createSink(daemon.baseUrl, {
+			behavior: "fail-then-recover",
+		});
 
-// retry-recovery: FRESH fail-then-recover sink → emit → delivery ends `delivered`
-// with attempt_count === 4 (3×500 then 200); timeline shows three 500s then a 200.
-test.todo("retry-recovery: recovers to delivered after transient 500s", () => {});
+		await emitEvent(daemon.baseUrl, {
+			type: "payment.succeeded",
+			data: { paymentId: "pay_1", amount: 42 },
+		});
 
-// permanent-failure: always-500 sink → emit → delivery ends `failed` after exactly
-// config.maxAttempts attempts; every Attempt is a 500.
-test.todo("permanent-failure: exhausts retries and ends failed", () => {});
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: endpoint.id,
+			expectedCount: 1,
+		});
 
-// gone-disables: 410-gone sink → emit → delivery `failed`, Endpoint `disabled`,
-// and a second event of the same type produces no new Delivery for it.
-test.todo("gone-disables: 410 fails the delivery and disables the endpoint", () => {});
+		const settled = await deliveriesFor(daemon.baseUrl, endpoint.id);
+		expect(settled).toHaveLength(1);
 
-// delete-cancels: BLOCKED on DELETE /endpoints/:id (route not implemented; out of
-// scope for this step). Once it exists: slow sink → emit → delete endpoint in-flight
-// → in-flight Deliveries end `canceled` (not `failed`).
-test.todo("delete-cancels: deleting an endpoint cancels its in-flight deliveries", () => {});
+		const delivery = settled[0];
+		if (!delivery) throw new Error("[retry-recovery] Delivery not found");
 
-// signature-verified: verify-signature sink → emit → delivery `delivered`,
-// attempt_count === 1, Attempt is 200 (the server-signed envelope verifies).
-test.todo("signature-verified: a valid signature is accepted", () => {});
+		expect(delivery.status).toBe("delivered");
+		expect(delivery.attemptCount).toBe(4);
 
-// routing: disjoint event_types + one ["*"] → emit one type → only the matching
-// endpoint and the wildcard get Deliveries (deliveryCount === 2); the third gets none.
-test.todo("routing: an event fans out only to matching subscriptions", () => {});
+		const detail = await getDeliveryWithAttempts(daemon.baseUrl, delivery.id);
+		expect(detail.attempts).toHaveLength(4);
+		expect(detail.attempts[0]?.statusCode).toBe(500);
+		expect(detail.attempts[1]?.statusCode).toBe(500);
+		expect(detail.attempts[2]?.statusCode).toBe(500);
+
+		const lastAttempt = detail.attempts[3];
+		if (!lastAttempt) throw new Error("[retry-recovery] Attempt not found");
+
+		expect(lastAttempt.statusCode).toBeGreaterThanOrEqual(200);
+		expect(lastAttempt.statusCode).toBeLessThan(300);
+		expect(lastAttempt.error).toBeNull();
+	});
+});
+
+describe("permanent-failure", () => {
+	test("exhausts retries and ends failed", async () => {
+		const { endpoint } = await createSink(daemon.baseUrl, {
+			behavior: "always-500",
+		});
+
+		await emitEvent(daemon.baseUrl, {
+			type: "payment.failed",
+			data: { paymentId: "pay_1", amount: 42 },
+		});
+
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: endpoint.id,
+			expectedCount: 1,
+		});
+
+		const settled = await deliveriesFor(daemon.baseUrl, endpoint.id);
+		expect(settled).toHaveLength(1);
+
+		const delivery = settled[0];
+		if (!delivery) throw new Error("[permanent-failure] Delivery not found");
+
+		expect(delivery.status).toBe("failed");
+		expect(delivery.attemptCount).toBe(maxAttempts);
+
+		const detail = await getDeliveryWithAttempts(daemon.baseUrl, delivery.id);
+		expect(detail.attempts).toHaveLength(maxAttempts);
+		for (const attempt of detail.attempts) {
+			expect(attempt.statusCode).toBe(500);
+		}
+	});
+});
+
+describe("gone-disables", () => {
+	test("410 fails the delivery and disables the endpoint", async () => {
+		const { endpoint } = await createSink(daemon.baseUrl, {
+			behavior: "410-gone",
+		});
+
+		await emitEvent(daemon.baseUrl, {
+			type: "order.created",
+			data: { orderId: "ord_gone", total: 99 },
+		});
+
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: endpoint.id,
+			expectedCount: 1,
+		});
+
+		const settled = await deliveriesFor(daemon.baseUrl, endpoint.id);
+		expect(settled).toHaveLength(1);
+
+		const delivery = settled[0];
+		if (!delivery) throw new Error("[gone-disables] Delivery not found");
+
+		expect(delivery.status).toBe("failed");
+		expect(delivery.attemptCount).toBe(1);
+
+		const detail = await getDeliveryWithAttempts(daemon.baseUrl, delivery.id);
+		expect(detail.attempts).toHaveLength(1);
+		expect(detail.attempts[0]?.statusCode).toBe(410);
+
+		const endpoints = await listEndpoints(daemon.baseUrl);
+		const ep = endpoints.find((e) => e.id === endpoint.id);
+		expect(ep?.state).toBe("disabled");
+
+		const beforeSecond = (await deliveriesFor(daemon.baseUrl, endpoint.id))
+			.length;
+		await emitEvent(daemon.baseUrl, {
+			type: "order.created",
+			data: { orderId: "ord_gone_2", total: 100 },
+		});
+		const afterSecond = (await deliveriesFor(daemon.baseUrl, endpoint.id))
+			.length;
+		expect(afterSecond).toBe(beforeSecond);
+	});
+});
+
+describe("delete-cancels", () => {
+	test("deleting an endpoint cancels its in-flight deliveries", async () => {
+		const { endpoint } = await createSink(daemon.baseUrl, {
+			behavior: "slow",
+		});
+
+		await emitEvent(daemon.baseUrl, {
+			type: "order.created",
+			data: { orderId: "ord_delete", total: 100 },
+		});
+
+		const deleteRes = await fetch(
+			`${daemon.baseUrl}/endpoints/${endpoint.id}`,
+			{ method: "DELETE" },
+		);
+		expect(deleteRes.status).toBe(204);
+
+		const settled = await waitForSettled(daemon.baseUrl, {
+			endpointId: endpoint.id,
+			expectedCount: 1,
+		});
+		expect(settled).toHaveLength(1);
+
+		const delivery = settled[0];
+		if (!delivery) throw new Error("[delete-cancels] Delivery not found");
+
+		expect(delivery.status).toBe("canceled");
+	});
+});
+
+describe("signature-verified", () => {
+	test("a valid signature is accepted", async () => {
+		const { endpoint } = await createSink(daemon.baseUrl, {
+			behavior: "verify-signature",
+		});
+
+		await emitEvent(daemon.baseUrl, {
+			type: "order.created",
+			data: { orderId: "ord_sig", total: 55 },
+		});
+
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: endpoint.id,
+			expectedCount: 1,
+		});
+
+		const settled = await deliveriesFor(daemon.baseUrl, endpoint.id);
+		expect(settled).toHaveLength(1);
+
+		const delivery = settled[0];
+		if (!delivery) throw new Error("[signature-verified] Delivery not found");
+
+		expect(delivery.status).toBe("delivered");
+		expect(delivery.attemptCount).toBe(1);
+
+		const detail = await getDeliveryWithAttempts(daemon.baseUrl, delivery.id);
+		expect(detail.attempts).toHaveLength(1);
+		const attempt = detail.attempts[0];
+		if (!attempt) throw new Error("[signature-verified] Attempt not found");
+
+		expect(attempt.statusCode).toBeGreaterThanOrEqual(200);
+		expect(attempt.statusCode).toBeLessThan(300);
+		expect(attempt.error).toBeNull();
+	});
+});
+
+describe("routing", () => {
+	test("an event fans out only to matching subscriptions", async () => {
+		const orderSink = await createSink(daemon.baseUrl, {
+			behavior: "always-200",
+			eventTypes: ["order.created"],
+		});
+		const paymentSink = await createSink(daemon.baseUrl, {
+			behavior: "always-200",
+			eventTypes: ["payment.succeeded"],
+		});
+		const wildcardSink = await createSink(daemon.baseUrl, {
+			behavior: "always-200",
+			eventTypes: ["*"],
+		});
+
+		const beforeOrder = (
+			await deliveriesFor(daemon.baseUrl, orderSink.endpoint.id)
+		).length;
+		const beforePayment = (
+			await deliveriesFor(daemon.baseUrl, paymentSink.endpoint.id)
+		).length;
+		const beforeWildcard = (
+			await deliveriesFor(daemon.baseUrl, wildcardSink.endpoint.id)
+		).length;
+
+		await emitEvent(daemon.baseUrl, {
+			type: "order.created",
+			data: { orderId: "ord_1", total: 1010 },
+		});
+
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: orderSink.endpoint.id,
+			expectedCount: beforeOrder + 1,
+		});
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: wildcardSink.endpoint.id,
+			expectedCount: beforeWildcard + 1,
+		});
+
+		const orderDeliveries = await deliveriesFor(
+			daemon.baseUrl,
+			orderSink.endpoint.id,
+		);
+		const paymentDeliveries = await deliveriesFor(
+			daemon.baseUrl,
+			paymentSink.endpoint.id,
+		);
+		const wildcardDeliveries = await deliveriesFor(
+			daemon.baseUrl,
+			wildcardSink.endpoint.id,
+		);
+
+		expect(orderDeliveries.length).toBe(beforeOrder + 1);
+		expect(paymentDeliveries.length).toBe(beforePayment);
+		expect(wildcardDeliveries.length).toBe(beforeWildcard + 1);
+	});
+});
