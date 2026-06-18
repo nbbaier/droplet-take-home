@@ -3,9 +3,11 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"dev": "bun run --hot src/index.ts",
+		"dev": "bun run src/index.ts",
+		"demo": "BACKOFF_BASE_MS=200 POLL_INTERVAL_MS=50 REQUEST_TIMEOUT_MS=2000 SINK_SLOW_DELAY_MS=3000 bun run src/index.ts",
 		"harness": "bun run src/harness/index.ts",
-		"status": "bun run src/cli/index.ts status"
+		"status": "bun run src/cli/index.ts status",
+		"test": "bun test"
 	},
 	"dependencies": {
 		"@libsql/client": "^0.17.4",
