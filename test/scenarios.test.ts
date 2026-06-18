@@ -22,6 +22,7 @@ import {
 	waitForSettled,
 } from "../src/harness/client";
 import { startTestDaemon, type TestDaemon } from "../src/testing/bootstrap";
+import type { StatusSnapshot } from "../src/types";
 
 const maxAttempts = Number(process.env.MAX_ATTEMPTS ?? 5);
 
@@ -310,4 +311,58 @@ describe("routing", () => {
 		expect(paymentDeliveries.length).toBe(beforePayment);
 		expect(wildcardDeliveries.length).toBe(beforeWildcard + 1);
 	});
+});
+
+describe("status", () => {
+	test("GET /status returns 200 with a complete snapshot shape", async () => {
+		// Drive a delivery through so the simple counts are non-trivial.
+		const { endpoint } = await createSink(daemon.baseUrl, {
+			behavior: "always-200",
+		});
+		await emitEvent(daemon.baseUrl, {
+			type: "order.created",
+			data: { orderId: "ord_status" },
+		});
+		await waitForSettled(daemon.baseUrl, {
+			endpointId: endpoint.id,
+			expectedCount: 1,
+		});
+
+		const res = await fetch(`${daemon.baseUrl}/status`);
+		expect(res.status).toBe(200);
+		const snapshot = (await res.json()) as StatusSnapshot;
+
+		// Simple aggregations (implemented) — sane, non-negative, internally consistent.
+		expect(typeof snapshot.generatedAt).toBe("string");
+		const d = snapshot.deliveries;
+		expect(d.delivered).toBeGreaterThanOrEqual(1);
+		expect(d.total).toBe(
+			d.pending + d.processing + d.delivered + d.failed + d.canceled,
+		);
+		expect(snapshot.endpoints.total).toBeGreaterThanOrEqual(1);
+		expect(snapshot.events).toBeGreaterThanOrEqual(1);
+		expect(snapshot.inBackoff).toBeGreaterThanOrEqual(0);
+
+		// Windowed metrics exist in the shape even while stubbed.
+		expect(snapshot.windowed).toBeDefined();
+		expect(snapshot.windowed.latencyMs).toBeDefined();
+	});
+
+	// Advanced/windowed metric math is stubbed for the human — assert once implemented.
+	test.todo(
+		"windowed throughput counts terminal deliveries in the window",
+		() => {},
+	);
+	test.todo(
+		"successRate = delivered ÷ (delivered + failed) over the window",
+		() => {},
+	);
+	test.todo(
+		"attempt latency p50/p95 computed from attempts.duration_ms",
+		() => {},
+	);
+	test.todo(
+		"attemptsToSuccess distribution/avg for delivered deliveries",
+		() => {},
+	);
 });

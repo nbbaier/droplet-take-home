@@ -7,6 +7,7 @@
  * + the `*` wildcard semantics).
  */
 
+import { log } from "./log";
 import { createDelivery } from "./store/deliveries";
 import { listActiveEndpoints } from "./store/endpoints";
 import type { Endpoint, Event } from "./types";
@@ -27,6 +28,15 @@ export function matches(endpoint: Endpoint, eventType: Event["type"]): boolean {
 export async function fanOut(event: Event): Promise<number> {
 	const endpoints = await listActiveEndpoints();
 	const targets = endpoints.filter((e) => matches(e, event.type));
-	await Promise.all(targets.map((e) => createDelivery(event.id, e.id)));
+	await Promise.all(
+		targets.map(async (e) => {
+			const delivery = await createDelivery(event.id, e.id);
+			log("delivery.created", {
+				delivery_id: delivery.id,
+				event_id: event.id,
+				endpoint_id: e.id,
+			});
+		}),
+	);
 	return targets.length;
 }

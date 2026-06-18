@@ -92,6 +92,63 @@ export interface Attempt {
 	createdAt: string;
 }
 
+/**
+ * The metrics snapshot returned by `GET /status`, computed on-read from the
+ * tables (no parallel counters — see PLAN step 5 / the on-read constraint).
+ *
+ * Split into "simple" aggregations (implemented) and "windowed/statistical"
+ * metrics (stubbed for the human — they involve real decisions about window
+ * bounds, p95 with small N, etc.). Stubbed fields return typed placeholders so
+ * the endpoint always responds 200 with a complete shape.
+ */
+export interface StatusSnapshot {
+	/** When this snapshot was computed (ISO 8601). */
+	generatedAt: string;
+
+	/** Rolling window (ms) the windowed metrics below are computed over. */
+	windowMs: number;
+
+	/** Deliveries grouped by status, plus the overall total. */
+	deliveries: {
+		pending: number;
+		processing: number;
+		delivered: number;
+		failed: number;
+		canceled: number;
+		total: number;
+	};
+
+	/** Endpoints grouped by lifecycle state. */
+	endpoints: {
+		active: number;
+		disabled: number;
+		deleted: number;
+		total: number;
+	};
+
+	/** `pending` Deliveries whose next_attempt_at is in the future (waiting out backoff). */
+	inBackoff: number;
+
+	/** Total Events ingested. */
+	events: number;
+
+	/**
+	 * Windowed / statistical metrics — STUBBED for the human. Each is a typed
+	 * placeholder (null/0/[]) today; getStatusSnapshot still wires them in so the
+	 * shape is complete. See src/store/metrics.ts for the exact TODOs.
+	 */
+	windowed: {
+		/** Deliveries reaching a terminal state within `windowMs`. */
+		throughput: number;
+		/** delivered ÷ (delivered + failed) over the window, or null if no terminal deliveries. */
+		successRate: number | null;
+		/** Attempt duration_ms percentiles over the window. */
+		latencyMs: { p50: number | null; p95: number | null };
+		/** Distribution/avg attempts for delivered deliveries. */
+		attemptsToSuccess: { avg: number | null; distribution: number[] };
+	};
+}
+
 /** The serialized body POSTed to an Endpoint. Signature is computed over this. */
 export interface DeliveryEnvelope {
 	id: string; // the Event id — stable across retries; consumer dedup key

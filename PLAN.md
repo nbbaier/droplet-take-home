@@ -87,13 +87,16 @@ One central config so demo delays can be shrunk:
 
 ### 5. Observability
 
-- [ ] Status/metrics endpoint (computed on-read): queue depth by status,
+- [~] Status/metrics endpoint (computed on-read): queue depth by status,
       throughput (last 1/5 min), success rate, retry health (in-backoff count +
       attempts-to-success), latency p50/p95, endpoint counts (incl. disabled).
-- [ ] `webhooks status` CLI command rendering it.
-- [ ] JSON-lines lifecycle logs: `event.ingested`, `delivery.created`,
+      (`GET /status` + simple aggregations done; windowed/statistical metrics
+      stubbed with TODOs in `src/store/metrics.ts` — endpoint returns 200.)
+- [~] `webhooks status` CLI command rendering it. (Fetch + basic render done;
+      polished formatting / `--watch` left as a TODO in `src/cli/index.ts`.)
+- [x] JSON-lines lifecycle logs: `event.ingested`, `delivery.created`,
       `attempt.started/succeeded/failed`, `delivery.exhausted`, `endpoint.disabled`,
-      correlatable by delivery_id/event_id.
+      correlatable by delivery_id/event_id. (`src/log.ts` + call sites.)
 
 ### Edge-case behaviors (fold into steps above)
 

@@ -4,7 +4,8 @@
 	"private": true,
 	"scripts": {
 		"dev": "bun run --hot src/index.ts",
-		"harness": "bun run src/harness/index.ts"
+		"harness": "bun run src/harness/index.ts",
+		"status": "bun run src/cli/index.ts status"
 	},
 	"dependencies": {
 		"@libsql/client": "^0.17.4",

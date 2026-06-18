@@ -11,6 +11,7 @@
 import { classifyResult, computeBackoffMs, shouldRetry } from "./classifier";
 import { config } from "./config";
 import { buildEnvelope, deliverOne } from "./delivery";
+import { log } from "./log";
 import { recordAttempt } from "./store/attempts";
 import {
 	cancelDeliveriesForEndpoint,
@@ -42,11 +43,18 @@ async function processDelivery(delivery: Delivery): Promise<void> {
 		return;
 	}
 
+	const attemptNumber = delivery.attemptCount + 1;
 	const envelope = buildEnvelope(event);
+	log("attempt.started", {
+		delivery_id: delivery.id,
+		event_id: delivery.eventId,
+		endpoint_id: delivery.endpointId,
+		attempt_number: attemptNumber,
+	});
 	const result = await deliverOne(endpoint, envelope);
 	await recordAttempt({
 		deliveryId: delivery.id,
-		attemptNumber: delivery.attemptCount + 1,
+		attemptNumber,
 		statusCode: result.statusCode,
 		responseBody: result.responseBody,
 		error: result.error,
@@ -55,25 +63,45 @@ async function processDelivery(delivery: Delivery): Promise<void> {
 
 	const outcome = classifyResult(result);
 
+	const attemptResultFields = {
+		delivery_id: delivery.id,
+		event_id: delivery.eventId,
+		endpoint_id: delivery.endpointId,
+		attempt_number: attemptNumber,
+		status_code: result.statusCode,
+		duration_ms: result.durationMs,
+	};
+
 	switch (outcome.action) {
 		case "delivered":
+			log("attempt.succeeded", attemptResultFields);
 			await markDelivered(delivery.id);
 			break;
 		case "failed":
+			log("attempt.failed", attemptResultFields);
 			await markFailed(delivery.id);
 			break;
 		case "gone":
+			log("attempt.failed", attemptResultFields);
 			await markFailed(delivery.id);
 			await disableEndpoint(delivery.endpointId);
+			log("endpoint.disabled", { endpoint_id: delivery.endpointId });
 			await cancelDeliveriesForEndpoint(delivery.endpointId);
 			break;
 		case "retry":
+			log("attempt.failed", attemptResultFields);
 			if (shouldRetry(delivery.attemptCount, outcome)) {
 				const delayMs =
 					outcome.retryAfterMs ?? computeBackoffMs(delivery.attemptCount + 1);
 				const nextAttemptAt = new Date(Date.now() + delayMs).toISOString();
 				await rescheduleDelivery(delivery.id, nextAttemptAt);
 			} else {
+				log("delivery.exhausted", {
+					delivery_id: delivery.id,
+					event_id: delivery.eventId,
+					endpoint_id: delivery.endpointId,
+					attempt_number: attemptNumber,
+				});
 				await markFailed(delivery.id);
 			}
 			break;

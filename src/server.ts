@@ -11,6 +11,7 @@ import { Hono } from "hono";
 import { config } from "./config";
 import { fanOut } from "./fanout";
 import { newId } from "./ids";
+import { log } from "./log";
 import { behaviorResponse } from "./sinks";
 import { listAttemptsForDelivery } from "./store/attempts";
 import {
@@ -25,6 +26,7 @@ import {
 	softDeleteEndpoint,
 } from "./store/endpoints";
 import { createEvent } from "./store/events";
+import { getStatusSnapshot } from "./store/metrics";
 import { createSink, getSink, incrementHits } from "./store/sinks";
 import {
 	createSinkSchema,
@@ -64,6 +66,7 @@ app.post("/events", async (c) => {
 		);
 	}
 	const event = await createEvent(parsed.data);
+	log("event.ingested", { event_id: event.id, type: event.type });
 	const deliveryCount = await fanOut(event);
 	return c.json({ event, deliveryCount }, 202);
 });
@@ -133,4 +136,12 @@ app.delete("/endpoints/:id", async (c) => {
 	return c.body(null, 204);
 });
 
-// TODO (PLAN step 5): GET /status (computed-on-read metrics snapshot).
+/**
+ * Metrics snapshot, computed on-read from the tables (no parallel counters).
+ * Simple aggregations are real; windowed/statistical metrics are stubbed
+ * placeholders (see src/store/metrics.ts) so this always returns 200 with a
+ * complete shape. The `webhooks status` CLI renders this.
+ */
+app.get("/status", async (c) => {
+	return c.json(await getStatusSnapshot());
+});

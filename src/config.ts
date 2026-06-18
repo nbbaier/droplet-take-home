@@ -14,6 +14,11 @@ function num(name: string, fallback: number): number {
 }
 const port = num("PORT", 3000);
 
+/** Logging verbosity: "info" emits JSON-line lifecycle logs; "silent" suppresses. */
+function logLevel(): "info" | "silent" {
+	return process.env.LOG_LEVEL === "silent" ? "silent" : "info";
+}
+
 export const config = {
 	/** Where the libsql database file lives. */
 	databaseUrl: process.env.DATABASE_URL ?? "file:./webhooks.db",
@@ -56,6 +61,13 @@ export const config = {
 
 	/** How long the `slow` Sink behavior stalls before responding. */
 	sinkSlowDelayMs: num("SINK_SLOW_DELAY_MS", 15_000),
+
+	/**
+	 * Logging verbosity. "info" (default) emits one JSON line per lifecycle event
+	 * to stdout; "silent" suppresses all logs (tests/harness set LOG_LEVEL=silent
+	 * so `bun test` output isn't flooded). See src/log.ts.
+	 */
+	logLevel: logLevel(),
 } as const;
 
 export type Config = typeof config;

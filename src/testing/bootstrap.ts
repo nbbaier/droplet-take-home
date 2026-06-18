@@ -54,6 +54,7 @@ export async function startTestDaemon(): Promise<TestDaemon> {
 	process.env.VISIBILITY_TIMEOUT_MS = "1000";
 	process.env.SINK_SLOW_DELAY_MS = "300"; // 'slow' sink stalls past the timeout
 	process.env.REQUEST_TIMEOUT_MS = "100"; // so the 'slow' sink trips a timeout
+	process.env.LOG_LEVEL = "silent"; // don't flood `bun test`/harness with JSON log lines
 
 	// 2. Dynamic-import the modules that snapshot config at import time. Importing
 	//    fresh per-call isn't needed (the module graph is process-wide), but env is
