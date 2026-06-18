@@ -50,23 +50,25 @@ The flow is shown below: `POST /events` → validate → persist Event →
 POSTs a signed envelope → records an Attempt → marks delivered / reschedules / fails.
 
 ```
-  POST /events                         worker tick (poll)
-       │                                      │
-       ▼                                      ▼
-  ┌─────────┐  fan-out (routing locked   ┌──────────────────┐   atomic claim
-  │  Event  │  at ingest, 1 per EP) ────▶│    Deliveries    │─────────────────┐
-  └─────────┘                            │ pending/backoff  │                 │
-                                         └──────────────────┘                 ▼
-                                                                  ┌────────────┐
-                                                                  │   Attempt  │
-                                                                  │ HMAC POST  │
-                                                                  └─────┬──────┘
-                                                                        │
-       ╭───╮                                                            ▼
-       │   │  events in                                          ┌───────────┐
-       ╰─╥─╯                                                     │ Endpoint  │
-         ║                                                       │ or Sink   │
-         ╚══════════════════════════════════════════════════════▶└───────────┘
+  POST /events
+       │  validate + store
+       ▼
+  Event ──fan-out──▶ Delivery × N         one per matching Endpoint;
+                     (queued in SQLite)    routing is frozen at fan-out
+                          │
+                          │  worker polls (~250ms) and atomically
+                          │  claims due rows: pending → processing
+                          ▼
+                     Attempt ───── signed HMAC POST ─────▶ Endpoint / Sink
+                          ▲                                 │
+                          └───────── HTTP response ─────────┘
+                          │
+                          ▼  classify the response:
+                            - 2xx                  -> delivered
+                            - 5xx / 429 / timeout  -> reschedule, backoff (<= 5 attempts)
+                            - other 4xx            -> failed
+                            - 410 Gone             -> failed + disable the Endpoint
+                            (Endpoint deleted/disabled before send -> canceled)
 ```
 
 More information can be found in the following design docs:
@@ -230,17 +232,23 @@ curl -s localhost:3000/status
 | Behavior            | What it does                                          |
 | ------------------- | ----------------------------------------------------- |
 | `always-200`        | Immediate success                                     |
-| `always-500`        | Permanent transient failure (retries until exhausted) |
+| `always-500`        | Fails every attempt; retries until exhausted          |
 | `fail-then-recover` | Returns 500 for the first N hits, then 200            |
 | `410-gone`          | Permanent failure; disables the Endpoint              |
 | `slow`              | Sleeps past the request timeout                       |
 | `verify-signature`  | Recomputes the HMAC; returns 401 on mismatch          |
 
 - Scenarios (each prints a delivery/attempt timeline + summary):
-  `happy-path`, `retry-recovery`, `permanent-failure`, `gone-disables`,
-  `delete-cancels`, `signature-verified`, `routing`.
 
-   \_todo a table here with what the scenarios do
+| Scenario             | What it shows                                                       |
+| -------------------- | ------------------------------------------------------------------ |
+| `happy-path`         | Healthy endpoint, delivered on the first attempt                   |
+| `retry-recovery`     | Transient 500s, then recovers to `delivered` (attempt 4)          |
+| `permanent-failure`  | `always-500` exhausts retries → terminal `failed`                 |
+| `gone-disables`      | `410` fails the delivery, disables the endpoint, stops new fan-out |
+| `delete-cancels`     | Deleting an endpoint mid-flight cancels its deliveries             |
+| `signature-verified` | Receiver verifies the HMAC; a valid signature → `delivered`        |
+| `routing`            | One event fans out only to matching subscriptions (+ wildcard)     |
 
 - `bun test` mirrors the scenarios 1:1 but **asserts** (scenarios print, tests
   assert; shared setup). Tests use an isolated temp daemon; the harness uses the
@@ -319,7 +327,7 @@ My process with Claude was the following:
 
 1. I read the assignment and do some early brainstorming in [`docs/brainstorming.md`](./docs/brainstorming.md).
 2. I used an agent skill, `/grill-with-docs` (see below) to have Claude Code interview me on what I wanted to build, with reference to the assignment and brainstorming doc.
-3. I then worked with Claude in a **scaffold-then-implement** loop: an agent stubs mechanical plumbing and leaves `// TODO (yours)` markers on the interesting bits; a human implements those interesting bit, and the agent and the human review the result. See the handoff notes in [`docs/handoff-*.md`](./docs/)
+3. I then worked with Claude in a **scaffold-then-implement** loop: an agent stubs mechanical plumbing and leaves `// TODO (yours)` markers on the interesting bits; a human implements those interesting bits, and the agent and the human review the result. See the handoff notes in [`docs/handoff-*.md`](./docs/)
 
 Some more specific notes on the process:
 
@@ -336,11 +344,11 @@ Some more specific notes on the process:
   `` `${timestamp}.${body}` ``), and a cancel race could overwrite a `processing`
   Delivery after soft-delete.
 
-I've included transcripts for the three sessions used to build this project in the `transcripts` directory. I used Simon Wilison's [claude-code-transcripts](https://github.com/simonw/claude-code-transcripts) tool. The transcripts are:
+I've included transcripts for the three sessions used to build this project in the `transcripts` directory. I used Simon Willison's [claude-code-transcripts](https://github.com/simonw/claude-code-transcripts) tool. The transcripts are:
 
-1. [`1_main-thread`](./transcripts/1_main-thread/index.html): the main thread where I did the vast majority the LLM assisted coding.2.
-2. [`2_step-4-handoff`](.transcripts/2_step-4-handoff/index.html): the thread where an agent scaffolded the code for step 4 of the [plan](./PLAN.md).
-3. [`3_step-5-handoff`](.transcripts/3_step-5-handoff/index.html): the thread where an agent scaffolded the code for step 5 of the [plan](./PLAN.md).
+1. [`1_main-thread`](./transcripts/1_main-thread/index.html): the main thread where I did the vast majority of the LLM-assisted coding.
+2. [`2_step-4-handoff`](./transcripts/2_step-4-handoff/index.html): the thread where an agent scaffolded the code for step 4 of the [plan](./PLAN.md).
+3. [`3_step-5-handoff`](./transcripts/3_step-5-handoff/index.html): the thread where an agent scaffolded the code for step 5 of the [plan](./PLAN.md).
 
 I used two agent skills from [mattpocock/skills](https://github.com/mattpocock/skills) to help me during the project:
 
