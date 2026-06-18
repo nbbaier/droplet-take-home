@@ -29,41 +29,109 @@ async function fetchStatus(baseUrl: string): Promise<StatusSnapshot> {
 	return (await res.json()) as StatusSnapshot;
 }
 
-/**
- * Basic, readable dump of the snapshot. Intentionally plain.
- *
- * TODO (yours): nicer formatting — aligned columns / sections / color, a compact
- * one-line summary, and a `--watch` live view (PLAN stretch goal). The CLI is
- * where the observability UX polish lives now that there's no dashboard (ADR 0002),
- * so make this tasteful rather than a raw dump.
- */
+// --- formatting helpers --------------------------------------------------
+
+// Color only when writing to a TTY and NO_COLOR isn't set — so piped/redirected
+// output (logs, grep, CI) stays plain. Color is used ONLY in the header/summary
+// lines, never inside the aligned columns, so padding math sees raw widths.
+const useColor = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
+const ANSI = {
+	reset: "\x1b[0m",
+	bold: "\x1b[1m",
+	dim: "\x1b[2m",
+	red: "\x1b[31m",
+	green: "\x1b[32m",
+	yellow: "\x1b[33m",
+} as const;
+function paint(code: string, s: string): string {
+	return useColor ? `${code}${s}${ANSI.reset}` : s;
+}
+
+/** ISO → "YYYY-MM-DD HH:MM:SS". */
+function shortTime(iso: string): string {
+	return iso.replace("T", " ").slice(0, 19);
+}
+
+/** A "label   value" line, value right-aligned in a fixed column. */
+function kv(label: string, value: number, labelWidth: number): string {
+	return `  ${label.padEnd(labelWidth)}${String(value).padStart(5)}`;
+}
+
+/** Join two columns of pre-formatted (plain, un-colored) lines side by side. */
+function sideBySide(left: string[], right: string[], gap = 4): string[] {
+	const width = Math.max(...left.map((l) => l.length));
+	const rows: string[] = [];
+	for (let i = 0; i < Math.max(left.length, right.length); i++) {
+		const l = left[i] ?? "";
+		const r = right[i] ?? "";
+		rows.push(l.padEnd(width + gap) + r);
+	}
+	return rows;
+}
+
 function renderStatus(s: StatusSnapshot): string {
-	const lines: string[] = [];
-	lines.push(`webhook-delivery status  (${s.generatedAt})`);
-	lines.push("");
-	lines.push("Deliveries:");
-	lines.push(`  pending    ${s.deliveries.pending}`);
-	lines.push(`  processing ${s.deliveries.processing}`);
-	lines.push(`  delivered  ${s.deliveries.delivered}`);
-	lines.push(`  failed     ${s.deliveries.failed}`);
-	lines.push(`  canceled   ${s.deliveries.canceled}`);
-	lines.push(`  total      ${s.deliveries.total}`);
-	lines.push("");
-	lines.push("Endpoints:");
-	lines.push(`  active   ${s.endpoints.active}`);
-	lines.push(`  disabled ${s.endpoints.disabled}`);
-	lines.push(`  deleted  ${s.endpoints.deleted}`);
-	lines.push(`  total    ${s.endpoints.total}`);
-	lines.push("");
-	lines.push(`In backoff: ${s.inBackoff}`);
-	lines.push(`Events:     ${s.events}`);
-	lines.push("");
-	lines.push(
-		`Windowed (last ${Math.round(s.windowMs / 1000)}s) [partial — TODO]:`,
+	const d = s.deliveries;
+	const e = s.endpoints;
+	const healthy = d.failed === 0 && e.disabled === 0;
+	const health = healthy
+		? paint(ANSI.green, "healthy")
+		: paint(ANSI.yellow, "degraded");
+	const rate =
+		s.windowed.successRate === null
+			? "n/a"
+			: `${Math.round(s.windowed.successRate * 100)}%`;
+
+	const out: string[] = [];
+	out.push(
+		`${paint(ANSI.bold, "webhook-delivery")} ${paint(ANSI.dim, "—")} ${health}` +
+			`    ${paint(ANSI.dim, shortTime(s.generatedAt))}`,
 	);
-	lines.push(`  throughput         ${s.windowed.throughput}`);
-	lines.push(`  success rate       ${s.windowed.successRate ?? "n/a"}`);
-	return lines.join("\n");
+	out.push("");
+
+	// Glanceable one-line tallies.
+	const dot = (color: string, n: number, label: string) =>
+		`${paint(n > 0 ? color : ANSI.dim, "●")} ${n} ${label}`;
+	out.push(
+		"  " +
+			[
+				dot(ANSI.green, d.delivered, "delivered"),
+				dot(ANSI.dim, d.pending, "pending"),
+				dot(ANSI.dim, d.processing, "in-flight"),
+				dot(ANSI.red, d.failed, "failed"),
+				dot(ANSI.dim, d.canceled, "canceled"),
+			].join("   "),
+	);
+	out.push(
+		"  " +
+			paint(
+				ANSI.dim,
+				`success ${rate}  ·  throughput ${s.windowed.throughput} (last ${Math.round(
+					s.windowMs / 1000,
+				)}s)  ·  in-backoff ${s.inBackoff}  ·  events ${s.events}`,
+			),
+	);
+	out.push("");
+
+	// Detailed breakdown, two aligned columns (plain text).
+	const left = [
+		"Deliveries",
+		kv("delivered", d.delivered, 11),
+		kv("pending", d.pending, 11),
+		kv("in-flight", d.processing, 11),
+		kv("failed", d.failed, 11),
+		kv("canceled", d.canceled, 11),
+		kv("total", d.total, 11),
+	];
+	const right = [
+		"Endpoints",
+		kv("active", e.active, 10),
+		kv("disabled", e.disabled, 10),
+		kv("deleted", e.deleted, 10),
+		kv("total", e.total, 10),
+	];
+	out.push(...sideBySide(left, right));
+
+	return out.join("\n");
 }
 
 async function main(): Promise<void> {
