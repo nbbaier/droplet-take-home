@@ -104,7 +104,7 @@ More information can be found in the following design docs:
 
 ### Signature contract (for consumers verifying webhooks)
 
-- Header `X-Webhook-Signature: sha256=<hex>` = HMAC-SHA256 over `` `${X-Webhook-Timestamp}.${rawBody}` `` keyed by the endpoint's secret.
+- Header `X-Webhook-Signature: sha256=<hex>` = HMAC-SHA256 over `` `${X-Webhook-Timestamp}.${rawBody}` `` keyed by the endpoint's secret.\*\*\*\*\*\*\*\*
 - To verify: recompute over the timestamp + the exact received body — **not** the body alone. Timestamp in the signed payload gives replay protection.
 
 ```ts
@@ -317,15 +317,15 @@ src/
   delivery.ts       outbound HTTP + HMAC signing + envelope
   classifier.ts     response → retry / fail / gone / delivered + backoff
   sinks.ts          in-process test receivers (behaviors)
+  shared.ts         JSON-lines logger + shared CLI/harness helpers (resolveBaseUrl)
   config.ts         env-driven config object
-  log.ts            JSON-lines structured logger
   ids.ts  types.ts  validation.ts
   db/               libsql client, schema.sql, migrate
   store/            data access: endpoints, events, deliveries, attempts, sinks, metrics
   harness/          scenario runner (client, scenarios, menu) — thin HTTP client
   cli/              `webhooks status` command
-  testing/          isolated-daemon bootstrap for tests
 test/               bun test suite (1:1 with scenarios)
+  bootstrap.ts      isolated-daemon bootstrap for tests
 docs/               ADRs, brainstorming, handoff notes
 CONTEXT.md PLAN.md  glossary + build log
 ```
