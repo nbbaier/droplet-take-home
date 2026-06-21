@@ -9,6 +9,9 @@ _.log
 .env.test.local
 .eslintcache
 .idea
+*.db
+*.db-shm
+*.db-wal
 *.lcov
 *.tgz
 *.tsbuildinfo
@@ -17,11 +20,7 @@ dist
 logs
 node_modules
 out
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 webhooks.db
 webhooks.db-shm
 webhooks.db-wal
-# transient sqlite files from tests/smoke scripts
-*.db
-*.db-shm
-*.db-wal
-report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
